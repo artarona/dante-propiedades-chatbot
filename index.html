@@ -694,7 +694,7 @@
                 <em>Escribí el número correspondiente</em>`,
                 opcionesHTML
             );
-        } // <-- FALTA ESTA LLAVE DE CIERRE
+        } // <-- ESTA LLAVE DE CIERRE FALTABA
 
 
         function procesarAmbientes(mensaje) {
@@ -1481,61 +1481,7 @@
             });
         }
 
-        // Ejecutar después de mostrar propiedades
-        function mostrarPropiedadesDestacadas() {
-            propiedadesFiltradas = filtrarPropiedadesConPrecision();
-            datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
-            
-            console.log('🔍 Propiedades filtradas:', propiedadesFiltradas);
-            console.log('📊 Criterios de búsqueda:', datosUsuario);
-            
-            if (propiedadesFiltradas.length === 0) {
-                agregarMensajeBot('🔍 No encontré propiedades exactas con tus criterios. Un asesor te contactará para ayudarte.');
-                estado = 'contacto';
-                solicitarContacto();
-                return;
-            }
-            
-            const mensajeInteres = `
-                <div class="interest-detected">
-                    <h3>🎉 ¡Encontramos opciones para vos!</h3>
-                    <p>Tenemos <strong>${propiedadesFiltradas.length} propiedades</strong> que coinciden exactamente con tu búsqueda.</p>
-                </div>
-            `;
-            
-            agregarMensajeBot(mensajeInteres);
-            
-            let propiedadesHTML = `<div class="properties-grid">`;
-            
-            propiedadesFiltradas.forEach((prop, index) => {
-                propiedadesHTML += crearTarjetaPropiedadDetallada(prop, index + 1);
-            });
-            
-            propiedadesHTML += `</div>`;
-            
-            agregarMensajeBot(propiedadesHTML);
-            
-            const opciones = `
-                <div class="menu-item">
-                    <span class="menu-number">1</span>Ver más detalles de las propiedades
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">2</span>Agendar visita
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">3</span>Hablar con asesor
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">4</span>Volver al inicio
-                </div>
-            `;
-            
-            agregarMensajeBot(
-                `<strong>¿Qué querés hacer?</strong><br>
-                <em>Escribí el número de tu opción</em>`,
-                opciones
-            );
-        } // <-- FALTA ESTA LLAVE DE CIERRE
+        
     
     
     </script>

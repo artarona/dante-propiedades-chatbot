@@ -993,36 +993,41 @@
             );
         }
 
+        
+        
+        
         function crearTarjetaPropiedadDetallada(prop, numero) {
-            // Generar características con mejor formato
+            console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
+            
+            // Generar características
             const caracteristicas = [];
             
-            // Características principales
-            if (prop.cochera && prop.cochera !== 'No' && prop.cochera !== 'x') {
+            // Características principales - CORREGIDAS
+            if (prop.cochera && (prop.cochera === 'Si' || prop.cochera === 'Sí' || prop.cochera === 'si' || prop.cochera === 'sí')) {
                 caracteristicas.push({text: 'Cochera', type: 'yes'});
             } else {
                 caracteristicas.push({text: 'Cochera', type: 'no'});
             }
             
-            if (prop.pileta && prop.pileta !== 'No') {
+            if (prop.pileta && (prop.pileta === 'Si' || prop.pileta === 'Sí' || prop.pileta === 'si' || prop.pileta === 'sí')) {
                 caracteristicas.push({text: 'Pileta', type: 'yes'});
             } else {
                 caracteristicas.push({text: 'Pileta', type: 'no'});
             }
             
-            if (prop.balcon && prop.balcon !== 'No' && prop.balcon !== 'x') {
+            if (prop.balcon && (prop.balcon === 'Si' || prop.balcon === 'Sí' || prop.balcon === 'si' || prop.balcon === 'sí' || prop.balcon === 'x')) {
                 caracteristicas.push({text: 'Balcón', type: 'yes'});
             } else {
                 caracteristicas.push({text: 'Balcón', type: 'no'});
             }
             
-            if (prop.acepta_mascotas && prop.acepta_mascotas !== 'No') {
+            if (prop.acepta_mascotas && (prop.acepta_mascotas === 'Si' || prop.acepta_mascotas === 'Sí' || prop.acepta_mascotas === 'si' || prop.acepta_mascotas === 'sí')) {
                 caracteristicas.push({text: 'Mascotas', type: 'yes'});
             } else {
                 caracteristicas.push({text: 'Mascotas', type: 'no'});
             }
             
-            if (prop.aire_acondicionado && prop.aire_acondicionado !== 'No') {
+            if (prop.aire_acondicionado && (prop.aire_acondicionado === 'Si' || prop.aire_acondicionado === 'Sí' || prop.aire_acondicionado === 'si' || prop.aire_acondicionado === 'sí')) {
                 caracteristicas.push({text: 'Aire A/C', type: 'yes'});
             } else {
                 caracteristicas.push({text: 'Aire A/C', type: 'no'});
@@ -1036,11 +1041,28 @@
                     ).join('')}
                 </div>`;
             
-            // Generar HTML de imágenes (más imágenes para match)
-            const imagenesHTML = prop.fotos && prop.fotos.length > 0 ? 
-                prop.fotos.slice(0, 8).map(foto => 
-                    `<img src="${foto}" alt="Imagen de ${prop.titulo}" class="property-image" onerror="this.style.display='none'">`
-                ).join('') : '<div style="text-align: center; padding: 1rem; color: #666;">📷 Fotos disponibles al contactar</div>';
+            // Generar HTML de imágenes - CORREGIDO
+            let imagenesHTML = '';
+            if (prop.fotos && prop.fotos.length > 0) {
+                console.log(`📸 Generando ${prop.fotos.length} imágenes para ${prop.id_temporal}`);
+                imagenesHTML = prop.fotos.map((foto, index) => {
+                    // Asegurar que la ruta de la imagen sea correcta
+                    const rutaImagen = foto.startsWith('http') ? foto : 
+                                    foto.startsWith('/') ? foto.substring(1) : 
+                                    foto;
+                    
+                    return `<img src="${rutaImagen}" 
+                                alt="Imagen ${index + 1} de ${prop.titulo}" 
+                                class="property-image" 
+                                loading="lazy"
+                                onerror="console.error('❌ Error cargando imagen:', this.src); this.style.display='none'">`;
+                }).join('');
+                
+                console.log(`✅ HTML de imágenes generado para ${prop.id_temporal}`);
+            } else {
+                imagenesHTML = '<div style="text-align: center; padding: 1rem; color: #666; background: #f8f9fa; border-radius: 5px;">📷 No hay fotos disponibles para esta propiedad</div>';
+                console.log(`❌ No hay fotos para ${prop.id_temporal}`);
+            }
             
             // Información adicional específica
             const infoAdicional = [
@@ -1078,7 +1100,7 @@
                         ` : ''}
                         
                         ${infoAdicional ? `
-                            <div style="margin: 1rem 0; font-size: 0.9rem;">
+                            <div style="margin: 1rem 0; font-size: 0.9rem; padding: 0.8rem; background: #f0f8ff; border-radius: 5px;">
                                 ${infoAdicional}
                             </div>
                         ` : ''}
@@ -1087,22 +1109,70 @@
                         
                         <div style="margin: 1rem 0;">
                             <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
-                            <div class="property-images">
+                            <div class="property-images" id="images-${prop.id_temporal}">
                                 ${imagenesHTML}
+                            </div>
+                            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
+                                ${prop.fotos && prop.fotos.length > 0 ? 
+                                    `Haz clic en las imágenes para ampliar` : 
+                                    `Contacta al asesor para ver las fotos disponibles`
+                                }
                             </div>
                         </div>
                         
-                        <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666;">
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666; padding: 0.8rem; background: #f8f9fa; border-radius: 5px;">
                             <strong>ID:</strong> ${prop.id_temporal} | 
                             <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
-                            <strong>Fotos:</strong> ${prop.fotos ? prop.fotos.length : 0}
+                            <strong>Fotos cargadas:</strong> ${prop.fotos ? prop.fotos.length : 0}
                         </div>
                     </div>
                 </div>
+                
+                <script>
+                    // Script para manejar errores de imágenes
+                    setTimeout(() => {
+                        const imageContainer = document.getElementById('images-${prop.id_temporal}');
+                        if (imageContainer) {
+                            const images = imageContainer.getElementsByTagName('img');
+                            console.log('🖼️ Verificando ${prop.fotos ? prop.fotos.length : 0} imágenes para ${prop.id_temporal}');
+                            
+                            let loadedImages = 0;
+                            let errorImages = 0;
+                            
+                            for (let img of images) {
+                                img.onload = function() {
+                                    loadedImages++;
+                                    console.log('✅ Imagen cargada:', img.src);
+                                };
+                                img.onerror = function() {
+                                    errorImages++;
+                                    console.log('❌ Error cargando imagen:', img.src);
+                                    img.style.display = 'none';
+                                };
+                            }
+                            
+                            // Verificar después de 2 segundos
+                            setTimeout(() => {
+                                console.log('📊 Resumen imágenes ${prop.id_temporal}:', {
+                                    total: images.length,
+                                    cargadas: loadedImages,
+                                    errores: errorImages
+                                });
+                                
+                                if (errorImages > 0 && loadedImages === 0) {
+                                    const errorMsg = document.createElement('div');
+                                    errorMsg.innerHTML = '<div style="text-align: center; padding: 1rem; color: #d35400; background: #fff3cd; border-radius: 5px; margin-top: 0.5rem;">⚠️ No se pudieron cargar las imágenes. Verifica la conexión o contacta al asesor.</div>';
+                                    imageContainer.appendChild(errorMsg);
+                                }
+                            }, 2000);
+                        }
+                    }, 100);
+                </script>
             `;
         }
 
 
+        
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
             console.log('📋 PROPIEDADES DISPONIBLES:', propiedades.map(p => ({
@@ -1397,6 +1467,34 @@
             document.getElementById('chatMessages').innerHTML = '';
             mostrarMenuInicio();
         }
+
+        // Función para verificar imágenes - Agregar al final
+        function verificarTodasLasImagenes() {
+            console.log('🔍 Verificando todas las imágenes en la página...');
+            const todasLasImagenes = document.querySelectorAll('.property-image');
+            console.log(`📊 Total de imágenes en DOM: ${todasLasImagenes.length}`);
+            
+            todasLasImagenes.forEach((img, index) => {
+                console.log(`🖼️ Imagen ${index + 1}:`, {
+                    src: img.src,
+                    naturalWidth: img.naturalWidth,
+                    naturalHeight: img.naturalHeight,
+                    complete: img.complete
+                });
+            });
+        }
+
+        // Ejecutar después de mostrar propiedades
+        function mostrarPropiedadesDestacadas() {
+            // ... tu código existente ...
+            
+            // Después de agregar las propiedades al DOM, verificar imágenes
+            setTimeout(() => {
+                verificarTodasLasImagenes();
+            }, 2000);
+        }
+    
+    
     </script>
 </body>
 </html>

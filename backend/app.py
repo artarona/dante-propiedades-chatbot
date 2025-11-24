@@ -12,7 +12,7 @@ PROPERTIES = [
     {
         "id_temporal": "PROP001",
         "titulo": "Departamento 2 Ambientes - Microcentro",
-        "barrio": "Microcentro",
+        "barrio": "Microcentro", 
         "tipo": "departamento",
         "precio": 150000,
         "moneda_precio": "USD",
@@ -21,13 +21,13 @@ PROPERTIES = [
         "descripcion": "Departamento luminoso en el corazón de Buenos Aires"
     },
     {
-        "id_temporal": "PROP002", 
-        "titulo": "Casa 3 Ambientes - Palermo",
+        "id_temporal": "PROP002",
+        "titulo": "Casa 3 Ambientes - Palermo", 
         "barrio": "Palermo",
         "tipo": "casa",
         "precio": 200000,
-        "moneda_precio": "USD", 
-        "ambientes": 3,
+        "moneda_precio": "USD",
+        "ambientes": 3, 
         "direccion": "Av. Santa Fe 2500",
         "descripcion": "Casa con jardín en barrio residencial"
     }
@@ -38,7 +38,7 @@ PROPERTIES = [
 def home():
     return jsonify({"message": "🚀 Dante Chatbot Backend Running", "status": "active"})
 
-# Ruta de health check
+# Ruta de health check - ESTA ES LA QUE ESTÁ FALTANDO
 @app.route('/api/health')
 def health():
     return jsonify({"status": "healthy", "service": "dante-chatbot", "timestamp": datetime.now().isoformat()})
@@ -67,33 +67,6 @@ def chat_message():
 Escribe el número de tu opción:""",
                 'quick_replies': ['1', '2', '3', '4']
             }
-        elif message == '1':
-            response = {
-                'type': 'menu', 
-                'content': """🔍 **BÚSQUEDA DE PROPIEDADES**
-
-1️⃣ Por tipo de propiedad
-2️⃣ Por barrio  
-3️⃣ Ver todas
-4️⃣ Volver
-
-Escribe el número:""",
-                'quick_replies': ['1', '2', '3', '4']
-            }
-        elif message == '2':
-            # Mostrar todas las propiedades
-            content = f"🏠 **TODAS LAS PROPIEDADES ({len(PROPERTIES)}):**\n\n"
-            for i, prop in enumerate(PROPERTIES, 1):
-                precio = f"${prop['precio']:,} {prop['moneda_precio']}"
-                content += f"**{i}.** {prop['titulo']}\n"
-                content += f"   📍 {prop['barrio']} • {precio}\n"
-                content += f"   🏠 {prop['tipo']} • {prop['ambientes']} amb.\n\n"
-            
-            response = {
-                'type': 'properties',
-                'content': content,
-                'quick_replies': ['1', '2', '3', 'menu']
-            }
         else:
             response = {
                 'type': 'menu',
@@ -105,32 +78,6 @@ Escribe el número:""",
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# Ruta para obtener propiedades
-@app.route('/api/properties', methods=['GET'])
-def get_properties():
-    tipo = request.args.get('tipo')
-    barrio = request.args.get('barrio')
-    
-    filtered_properties = PROPERTIES
-    
-    if tipo:
-        filtered_properties = [p for p in filtered_properties if p['tipo'] == tipo]
-    if barrio:
-        filtered_properties = [p for p in filtered_properties if p['barrio'] == barrio]
-    
-    return jsonify(filtered_properties)
-
-# Ruta para estadísticas
-@app.route('/api/estadisticas', methods=['GET'])
-def get_estadisticas():
-    stats = {
-        'total_propiedades': len(PROPERTIES),
-        'barrios': list(set(p['barrio'] for p in PROPERTIES)),
-        'tipos': list(set(p['tipo'] for p in PROPERTIES)),
-        'ultima_actualizacion': datetime.now().isoformat()
-    }
-    return jsonify(stats)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

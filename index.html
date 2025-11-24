@@ -112,13 +112,6 @@
             border-left: 3px solid var(--whatsapp-green);
             background: #f8f9fa;
             border-radius: 0.3rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .menu-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
         }
         
         .menu-number {
@@ -339,12 +332,8 @@
             <!-- Los mensajes se cargan dinámicamente -->
         </div>
         
-        <div class="quick-actions" id="quickActions">
-            <!-- Botones rápidos se cargan dinámicamente -->
-        </div>
-        
         <div class="input-container">
-            <input type="text" id="userInput" placeholder="Escribe tu respuesta..." autocomplete="off">
+            <input type="text" id="userInput" placeholder="Escribe el número de tu opción..." autocomplete="off">
             <button class="send-button" onclick="enviarMensaje()">➤</button>
         </div>
     </div>
@@ -391,11 +380,54 @@
             datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
             datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
             datosDinamicos.ambientes = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb > 0))].sort((a, b) => a - b);
+            
+            console.log('📊 Datos extraídos:', {
+                barrios: datosDinamicos.barrios,
+                tipos: datosDinamicos.tipos,
+                operaciones: datosDinamicos.operaciones,
+                ambientes: datosDinamicos.ambientes
+            });
+        }
+
+        // FUNCIÓN PRINCIPAL DE INICIO - DEFINIDA ANTES DE USARSE
+        function mostrarMenuInicio() {
+            estado = 'inicio';
+            
+            // Generar opciones dinámicamente desde las operaciones disponibles
+            let opcionesHTML = '';
+            datosDinamicos.operaciones.forEach((operacion, index) => {
+                const numero = (index + 1).toString();
+                const operacionFormateada = operacion.charAt(0).toUpperCase() + operacion.slice(1);
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${operacionFormateada}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otros" si no hay muchas operaciones
+            if (datosDinamicos.operaciones.length < 4) {
+                const numeroOtros = (datosDinamicos.operaciones.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numeroOtros}</span>Otros
+                    </div>
+                `;
+            }
+            
+            agregarMensajeBot(
+                `¡Hola! Soy el asistente inmobiliario de Dante Propiedades. 😊<br><br>
+                <strong>Decime qué necesitás:</strong><br>
+                <em>Escribí el número de tu opción</em>`,
+                opcionesHTML
+            );
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('userInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') enviarMensaje();
+                if (e.key === 'Enter') {
+                    enviarMensaje();
+                }
             });
             document.getElementById('userInput').focus();
         });
@@ -403,6 +435,7 @@
         function enviarMensaje() {
             const input = document.getElementById('userInput');
             const mensaje = input.value.trim();
+            
             if (!mensaje) return;
 
             agregarMensajeUsuario(mensaje);
@@ -437,10 +470,300 @@
             return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
         }
 
-        // ... (funciones de menús se mantienen igual hasta procesarPrecio)
+        function procesarRespuesta(mensaje) {
+            console.log('Procesando mensaje:', mensaje, 'Estado actual:', estado);
+            
+            switch (estado) {
+                case 'inicio':
+                    procesarInicio(mensaje);
+                    break;
+                case 'tipo_propiedad':
+                    procesarTipoPropiedad(mensaje);
+                    break;
+                case 'ambientes':
+                    procesarAmbientes(mensaje);
+                    break;
+                case 'barrio':
+                    procesarBarrio(mensaje);
+                    break;
+                case 'barrio_texto':
+                    procesarBarrioTexto(mensaje);
+                    break;
+                case 'precio':
+                    procesarPrecio(mensaje);
+                    break;
+                case 'contacto':
+                    procesarContacto(mensaje);
+                    break;
+                case 'interes_detectado':
+                    procesarInteresDetectado(mensaje);
+                    break;
+                case 'agendar_visita':
+                case 'contactar_asesor':
+                    procesarContacto(mensaje);
+                    break;
+                default:
+                    agregarMensajeBot('❌ Estado no reconocido. Reiniciando chat...');
+                    reiniciarChat();
+            }
+        }
+
+        function procesarInicio(mensaje) {
+            const maxOpciones = datosDinamicos.operaciones.length;
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
+            
+            // Si hay opción "Otros"
+            if (datosDinamicos.operaciones.length < 4) {
+                opcionesValidas.push((maxOpciones + 1).toString());
+            }
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
+                
+                if (indice < datosDinamicos.operaciones.length) {
+                    datosUsuario.operacion = datosDinamicos.operaciones[indice];
+                    estado = 'tipo_propiedad';
+                    agregarMensajeBot(`✅ Elegiste: <strong>${datosUsuario.operacion.charAt(0).toUpperCase() + datosUsuario.operacion.slice(1)}</strong>`);
+                    mostrarMenuTipoPropiedad();
+                } else {
+                    // Opción "Otros"
+                    datosUsuario.operacion = 'otros';
+                    estado = 'contacto';
+                    agregarMensajeBot(`✅ Elegiste: <strong>Otros</strong>`);
+                    solicitarContacto();
+                }
+            } else {
+                agregarMensajeBot(`❌ Por favor, respondé con el número de tu opción (1-${opcionesValidas.length})`);
+                mostrarMenuInicio();
+            }
+        }
+
+        function mostrarMenuTipoPropiedad() {
+            estado = 'tipo_propiedad';
+            
+            let opcionesHTML = '';
+            datosDinamicos.tipos.forEach((tipo, index) => {
+                const numero = (index + 1).toString();
+                const tipoFormateado = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${tipoFormateado}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otros" si no hay muchos tipos
+            if (datosDinamicos.tipos.length < 5) {
+                const numeroOtros = (datosDinamicos.tipos.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numeroOtros}</span>Otros
+                    </div>
+                `;
+            }
+            
+            agregarMensajeBot(
+                `🏠 <strong>¿Qué tipo de propiedad te interesa?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
+
+        function procesarTipoPropiedad(mensaje) {
+            const maxOpciones = datosDinamicos.tipos.length;
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
+            
+            // Si hay opción "Otros"
+            if (datosDinamicos.tipos.length < 5) {
+                opcionesValidas.push((maxOpciones + 1).toString());
+            }
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
+                
+                if (indice < datosDinamicos.tipos.length) {
+                    datosUsuario.tipo = datosDinamicos.tipos[indice];
+                    estado = 'ambientes';
+                    agregarMensajeBot(`✅ ${datosUsuario.tipo.charAt(0).toUpperCase() + datosUsuario.tipo.slice(1)} — elegí el tipo:`);
+                    mostrarMenuAmbientes();
+                } else {
+                    // Opción "Otros"
+                    datosUsuario.tipo = 'otros';
+                    estado = 'barrio';
+                    agregarMensajeBot(`✅ Otros tipos de propiedad`);
+                    mostrarMenuBarrio();
+                }
+            } else {
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${opcionesValidas.length}`);
+                mostrarMenuTipoPropiedad();
+            }
+        }
+
+        function mostrarMenuAmbientes() {
+            estado = 'ambientes';
+            
+            let opcionesHTML = '';
+            
+            // Generar opciones de ambientes desde los datos disponibles
+            datosDinamicos.ambientes.forEach((ambiente, index) => {
+                const numero = (index + 1).toString();
+                const textoAmbiente = ambiente === 1 ? 'Monoambiente' : `${ambiente} ambientes`;
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${textoAmbiente}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "No aplica" para terrenos, oficinas, etc.
+            const numeroNoAplica = (datosDinamicos.ambientes.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item">
+                    <span class="menu-number">${numeroNoAplica}</span>No aplica
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `🛏️ <strong>¿Cuántos ambientes necesitás?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
+
+        function procesarAmbientes(mensaje) {
+            const maxOpciones = datosDinamicos.ambientes.length + 1; // +1 por "No aplica"
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
+                
+                if (indice < datosDinamicos.ambientes.length) {
+                    const ambiente = datosDinamicos.ambientes[indice];
+                    datosUsuario.ambientes = ambiente === 1 ? 'Monoambiente' : `${ambiente} ambientes`;
+                } else {
+                    datosUsuario.ambientes = 'No aplica';
+                }
+                
+                estado = 'barrio';
+                agregarMensajeBot(`✅ ${datosUsuario.ambientes}`);
+                mostrarMenuBarrio();
+            } else {
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${maxOpciones}`);
+                mostrarMenuAmbientes();
+            }
+        }
+
+        function mostrarMenuBarrio() {
+            estado = 'barrio';
+            
+            let opcionesHTML = '';
+            
+            // Generar opciones de barrios desde los datos disponibles
+            datosDinamicos.barrios.forEach((barrio, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${barrio}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otra zona"
+            const numeroOtraZona = (datosDinamicos.barrios.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item">
+                    <span class="menu-number">${numeroOtraZona}</span>Otra zona
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `📍 <strong>¿En qué zona buscás?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
+
+        function procesarBarrio(mensaje) {
+            const maxOpciones = datosDinamicos.barrios.length + 1; // +1 por "Otra zona"
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
+                
+                if (indice < datosDinamicos.barrios.length) {
+                    datosUsuario.barrio = datosDinamicos.barrios[indice];
+                    estado = 'precio';
+                    agregarMensajeBot(`✅ Zona: ${datosUsuario.barrio}`);
+                    mostrarMenuPrecio();
+                } else {
+                    agregarMensajeBot('📝 Escribí la zona que te interesa:');
+                    estado = 'barrio_texto';
+                }
+            } else {
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${maxOpciones}`);
+                mostrarMenuBarrio();
+            }
+        }
+
+        function procesarBarrioTexto(mensaje) {
+            if (mensaje.trim().length > 0) {
+                datosUsuario.barrio = mensaje;
+                estado = 'precio';
+                agregarMensajeBot(`✅ Zona: ${datosUsuario.barrio}`);
+                mostrarMenuPrecio();
+            } else {
+                agregarMensajeBot('❌ Por favor, escribí la zona que te interesa');
+            }
+        }
+
+        function mostrarMenuPrecio() {
+            estado = 'precio';
+            
+            // Determinar rangos de precio basados en la operación
+            const esVenta = datosUsuario.operacion === 'venta';
+            const moneda = esVenta ? 'U$D' : '$';
+            
+            const rangos = esVenta ? 
+                [
+                    'Hasta U$D 100.000',
+                    'U$D 100.000 - 200.000', 
+                    'U$D 200.000 - 500.000',
+                    'Más de U$D 500.000'
+                ] : [
+                    'Hasta $ 100.000',
+                    '$ 100.000 - 200.000',
+                    '$ 200.000 - 500.000', 
+                    'Más de $ 500.000'
+                ];
+            
+            let opcionesHTML = '';
+            rangos.forEach((rango, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${rango}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Consultar precio"
+            const numeroConsultar = (rangos.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item">
+                    <span class="menu-number">${numeroConsultar}</span>Consultar precio
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `💰 <strong>¿Qué rango de precio tenés en mente?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
 
         function procesarPrecio(mensaje) {
             const precios = ['1', '2', '3', '4', '5'];
+            
             if (precios.includes(mensaje)) {
                 datosUsuario.precio = mensaje;
                 
@@ -514,26 +837,25 @@
             
             // Mostrar opciones de acción
             const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
+                <div class="menu-item">
                     <span class="menu-number">1</span>Ver más detalles de las propiedades
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
+                <div class="menu-item">
                     <span class="menu-number">2</span>Agendar visita
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
+                <div class="menu-item">
                     <span class="menu-number">3</span>Hablar con asesor
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
+                <div class="menu-item">
                     <span class="menu-number">4</span>Volver al inicio
                 </div>
             `;
             
             agregarMensajeBot(
-                `<strong>¿Qué querés hacer?</strong>`,
+                `<strong>¿Qué querés hacer?</strong><br>
+                <em>Escribí el número de tu opción</em>`,
                 opciones
             );
-            
-            actualizarBotonesRapidos(['1', '2', '3', '4']);
         }
 
         function crearTarjetaPropiedad(prop, numero) {
@@ -561,9 +883,9 @@
                         <div class="property-images">
                             ${imagenes}
                         </div>
-                        <a href="#" class="property-link" onclick="verDetallesPropiedad('${prop.id_temporal}')">
-                            📋 Ver detalles completos
-                        </a>
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                            ID: ${prop.id_temporal}
+                        </div>
                     </div>
                 </div>
             `;
@@ -662,9 +984,9 @@
                                     '<div style="text-align: center; padding: 1rem; color: #666;">📷 Fotos disponibles al contactar al asesor</div>'
                                 }
                             </div>
-                            <a href="#" class="property-link" onclick="contactarPorPropiedad('${prop.id_temporal}')">
-                                📞 Contactar por esta propiedad
-                            </a>
+                            <div style="text-align: center; margin-top: 1rem;">
+                                <strong>ID:</strong> ${prop.id_temporal}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -704,56 +1026,82 @@
 
         function mostrarOpcionesInteres() {
             const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
+                <div class="menu-item">
                     <span class="menu-number">1</span>Ver más detalles
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
+                <div class="menu-item">
                     <span class="menu-number">2</span>Agendar visita
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
+                <div class="menu-item">
                     <span class="menu-number">3</span>Hablar con asesor
                 </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
+                <div class="menu-item">
                     <span class="menu-number">4</span>Volver al inicio
                 </div>
             `;
             
-            agregarMensajeBot(`<strong>¿Qué querés hacer?</strong>`, opciones);
-            actualizarBotonesRapidos(['1', '2', '3', '4']);
+            agregarMensajeBot(
+                `<strong>¿Qué querés hacer?</strong><br>
+                <em>Escribí el número de tu opción</em>`, 
+                opciones
+            );
         }
 
-        function verDetallesPropiedad(idPropiedad) {
-            const propiedad = propiedades.find(p => p.id_temporal === idPropiedad);
-            if (propiedad) {
-                // Aquí podrías abrir un modal o mostrar más detalles
-                alert(`Más detalles de: ${propiedad.titulo}\nPrecio: ${formatearPrecio(propiedad)}\nDescripción: ${propiedad.descripcion}`);
+        function solicitarContacto() {
+            agregarMensajeBot(
+                `📞 <strong>Para contactarte con las mejores opciones, necesitamos tus datos:</strong><br><br>
+                • <strong>Nombre completo</strong><br>
+                • <strong>Teléfono</strong><br>
+                • <strong>Email</strong><br><br>
+                Escribí tus datos en el siguiente formato:<br>
+                <code>Nombre - Teléfono - Email</code><br><br>
+                <em>Ejemplo: Juan Pérez - 11-1234-5678 - juan@email.com</em>`
+            );
+        }
+
+        function procesarContacto(mensaje) {
+            // Validación básica de formato
+            const partes = mensaje.split('-').map(part => part.trim());
+            if (partes.length >= 3) {
+                datosUsuario.contacto = mensaje;
+                
+                // Guardar lead
+                guardarLead();
+                
+                agregarMensajeBot(
+                    `✅ <strong>¡Perfecto! Tus datos fueron registrados.</strong><br><br>
+                    Un asesor se contactará contigo dentro de las próximas 2 horas.<br><br>
+                    <em>Gracias por confiar en Dante Propiedades 🏠</em>`
+                );
+                
+                // Esperar y volver al inicio
+                setTimeout(() => {
+                    reiniciarChat();
+                }, 3000);
+            } else {
+                agregarMensajeBot('❌ Por favor, usá el formato: <strong>Nombre - Teléfono - Email</strong>');
+                // Mantener el estado actual para reintentar
             }
-            return false; // Prevenir navegación
         }
 
-        function contactarPorPropiedad(idPropiedad) {
-            const propiedad = propiedades.find(p => p.id_temporal === idPropiedad);
-            if (propiedad) {
-                datosUsuario.propiedadEspecifica = propiedad.titulo;
-                hablarConAsesor();
-            }
-            return false;
-        }
-
-        // Actualizar procesarRespuesta para manejar el nuevo estado
-        function procesarRespuesta(mensaje) {
-            switch (estado) {
-                case 'interes_detectado':
-                    procesarInteresDetectado(mensaje);
-                    break;
-                case 'agendar_visita':
-                case 'contactar_asesor':
-                    procesarContacto(mensaje);
-                    break;
-                // ... otros casos existentes
-                default:
-                    // Manejar otros estados existentes
-                    break;
+        function guardarLead() {
+            try {
+                const lead = {
+                    ...datosUsuario,
+                    timestamp: new Date().toISOString(),
+                    id: Date.now().toString(),
+                    perfil: datosUsuario.perfilCompleto ? 'INTERESADO_REAL' : 'CONSULTA_GENERAL'
+                };
+                
+                // Guardar en localStorage
+                const leadsExistentes = JSON.parse(localStorage.getItem('dante_leads') || '[]');
+                leadsExistentes.push(lead);
+                localStorage.setItem('dante_leads', JSON.stringify(leadsExistentes));
+                
+                console.log('✅ Lead guardado:', lead);
+                
+            } catch (error) {
+                console.error('❌ Error guardando lead:', error);
             }
         }
 
@@ -761,23 +1109,6 @@
             if (!prop.precio || prop.precio === 0) return "Consultar precio";
             const moneda = prop.moneda_precio === 'USD' ? 'U$D' : '$';
             return `${moneda} ${prop.precio.toLocaleString()}`;
-        }
-
-        function actualizarBotonesRapidos(opciones) {
-            const quickActions = document.getElementById('quickActions');
-            quickActions.innerHTML = '';
-            opciones.forEach(opcion => {
-                const btn = document.createElement('button');
-                btn.className = 'quick-btn';
-                btn.textContent = opcion;
-                btn.onclick = () => seleccionarOpcion(opcion);
-                quickActions.appendChild(btn);
-            });
-        }
-
-        function seleccionarOpcion(numero) {
-            document.getElementById('userInput').value = numero;
-            enviarMensaje();
         }
 
         function reiniciarChat() {
@@ -789,8 +1120,6 @@
             document.getElementById('chatMessages').innerHTML = '';
             mostrarMenuInicio();
         }
-
-        // ... (resto de funciones de menús se mantienen igual)
     </script>
 </body>
 </html>

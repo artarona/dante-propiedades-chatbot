@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dante Propiedades - Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: 50px;
+        }
+        .bot-message {
+            background: #f1f1f1;
+            margin-right: 50px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .property-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .property-image {
+            max-width: 200px;
+            max-height: 150px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>Dante Propiedades - Asistente Virtual</h1>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                ¡Hola! Soy tu asistente de Dante Propiedades. ¿Qué tipo de propiedad estás buscando? Puedo ayudarte con:
+                <br>🏠 Casas, Departamentos, PHs, Oficinas, Terrenos
+                <br>💰 Venta o Alquiler
+                <br>📍 Barrios: Parque Avellaneda, Boedo, Microcentro, Pilar
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Ej: Busco casa en venta en Parque Avellaneda...">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        let propiedades = [];
+
+        // Cargar el JSON de propiedades
+        async function cargarPropiedades() {
+            try {
+                const response = await fetch('propiedades.json');
+                propiedades = await response.json();
+                console.log('Propiedades cargadas:', propiedades.length);
+            } catch (error) {
+                console.error('Error cargando propiedades:', error);
+            }
+        }
+
+        // Función para buscar propiedades
+        function buscarPropiedades(busqueda) {
+            const busquedaLower = busqueda.toLowerCase();
+            
+            return propiedades.filter(prop => {
+                return (
+                    prop.titulo.toLowerCase().includes(busquedaLower) ||
+                    prop.barrio.toLowerCase().includes(busquedaLower) ||
+                    prop.operacion.toLowerCase().includes(busquedaLower) ||
+                    prop.tipo.toLowerCase().includes(busquedaLower) ||
+                    (prop.descripcion && prop.descripcion.toLowerCase().includes(busquedaLower))
+                );
+            });
+        }
+
+        // Función para formatear precio
+        function formatearPrecio(propiedad) {
+            if (propiedad.precio === 0) return "Consultar precio";
+            return `${propiedad.moneda_precio} $${propiedad.precio.toLocaleString()}`;
+        }
+
+        // Función para mostrar propiedades
+        function mostrarPropiedades(propiedadesEncontradas) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            if (propiedadesEncontradas.length === 0) {
+                chatMessages.innerHTML += `
+                    <div class="message bot-message">
+                        No encontré propiedades con esos criterios. ¿Podrías intentar con otros parámetros?
+                    </div>
+                `;
+                return;
+            }
+
+            let mensaje = `<div class="message bot-message">
+                Encontré ${propiedadesEncontradas.length} propiedad(es):</div>`;
+
+            propiedadesEncontradas.forEach(prop => {
+                mensaje += `
+                <div class="property-card">
+                    <h3>${prop.titulo}</h3>
+                    <p><strong>Barrio:</strong> ${prop.barrio}</p>
+                    <p><strong>Operación:</strong> ${prop.operacion}</p>
+                    <p><strong>Tipo:</strong> ${prop.tipo}</p>
+                    <p><strong>Precio:</strong> ${formatearPrecio(prop)}</p>
+                    <p><strong>Ambientes:</strong> ${prop.ambientes}</p>
+                    <p><strong>Metros cuadrados:</strong> ${prop.metros_cuadrados}m²</p>
+                    <p>${prop.descripcion}</p>
+                    ${prop.fotos && prop.fotos.length > 0 ? 
+                        `<div>
+                            ${prop.fotos.slice(0, 3).map(foto => 
+                                `<img src="${foto}" alt="${prop.titulo}" class="property-image">`
+                            ).join('')}
+                        </div>` : 
+                        ''
+                    }
+                </div>`;
+            });
+
+            chatMessages.innerHTML += mensaje;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Función principal del chat
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value.trim();
+            
+            if (!message) return;
+
+            // Mostrar mensaje del usuario
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `<div class="message user-message">${message}</div>`;
+            
+            // Buscar propiedades
+            const propiedadesEncontradas = buscarPropiedades(message);
+            mostrarPropiedades(propiedadesEncontradas);
+
+            // Limpiar input
+            userInput.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Permitir enviar con Enter
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Cargar propiedades al iniciar
+        cargarPropiedades();
+    </script>
+</body>
+</html>

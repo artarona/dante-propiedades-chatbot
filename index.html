@@ -243,8 +243,8 @@
         }
         
         .property-image {
-            width: 120px;
-            height: 90px;
+            width: 150px;
+            height: 110px;
             object-fit: cover;
             border-radius: 5px;
             border: 2px solid white;
@@ -271,6 +271,18 @@
             border-radius: 15px;
             font-size: 0.8rem;
             border: 1px solid #27ae60;
+        }
+        
+        .feature-badge-yes {
+            background: #e8f5e8;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        
+        .feature-badge-no {
+            background: #ffebee;
+            color: #e53935;
+            border: 1px solid #e53935;
         }
         
         .property-link {
@@ -334,6 +346,16 @@
             color: #0d47a1;
         }
 
+        .debug-info {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 0.8rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
             .message {
                 max-width: 95%;
@@ -344,8 +366,8 @@
             }
             
             .property-image {
-                width: 100px;
-                height: 75px;
+                width: 120px;
+                height: 90px;
             }
         }
     </style>
@@ -397,6 +419,15 @@
             .then(data => {
                 propiedades = data;
                 console.log('✅ Propiedades cargadas:', propiedades.length);
+                console.log('📋 Propiedades disponibles:', propiedades.map(p => ({
+                    id: p.id_temporal,
+                    titulo: p.titulo,
+                    operacion: p.operacion,
+                    tipo: p.tipo,
+                    ambientes: p.ambientes,
+                    barrio: p.barrio,
+                    precio: p.precio
+                })));
                 extraerDatosDinamicos();
                 mostrarMenuInicio();
             })
@@ -414,12 +445,7 @@
             const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb > 0))].sort((a, b) => a - b);
             datosDinamicos.ambientes = ambientesUnicos.map(amb => amb === 8 ? 'más de 4' : amb);
             
-            console.log('📊 Datos extraídos:', {
-                barrios: datosDinamicos.barrios,
-                tipos: datosDinamicos.tipos,
-                operaciones: datosDinamicos.operaciones,
-                ambientes: datosDinamicos.ambientes
-            });
+            console.log('📊 Datos extraídos:', datosDinamicos);
         }
 
         function mostrarMenuInicio() {
@@ -673,13 +699,17 @@
                     const ambiente = datosDinamicos.ambientes[indice];
                     if (ambiente === 'más de 4') {
                         datosUsuario.ambientes = 'Más de 4 ambientes';
+                        datosUsuario.ambientesNumero = 5; // Para filtrado
                     } else if (ambiente === 1) {
                         datosUsuario.ambientes = 'Monoambiente';
+                        datosUsuario.ambientesNumero = 1;
                     } else {
                         datosUsuario.ambientes = `${ambiente} ambientes`;
+                        datosUsuario.ambientesNumero = ambiente;
                     }
                 } else {
                     datosUsuario.ambientes = 'No aplica';
+                    datosUsuario.ambientesNumero = 0;
                 }
                 
                 estado = 'barrio';
@@ -837,7 +867,16 @@
                 </div>
             `;
             
-            agregarMensajeBot(resumenHTML);
+            // DEBUG: Mostrar información de filtrado
+            const debugInfo = `
+                <div class="debug-info">
+                    <strong>🔍 Debug Filtrado:</strong><br>
+                    Buscando: ${datosUsuario.operacion} | ${datosUsuario.tipo} | ${datosUsuario.ambientes} | ${datosUsuario.barrio}<br>
+                    Propiedades en base: ${propiedades.length}
+                </div>
+            `;
+            
+            agregarMensajeBot(resumenHTML + debugInfo);
             
             // VERIFICAR SI ES UN INTERESADO REAL
             if (esInteresadoReal()) {
@@ -876,6 +915,9 @@
             propiedadesFiltradas = filtrarPropiedadesConPrecision();
             datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
             
+            console.log('🔍 Propiedades filtradas:', propiedadesFiltradas);
+            console.log('📊 Criterios de búsqueda:', datosUsuario);
+            
             if (propiedadesFiltradas.length === 0) {
                 agregarMensajeBot('🔍 No encontré propiedades exactas con tus criterios. Un asesor te contactará para ayudarte.');
                 estado = 'contacto';
@@ -894,7 +936,7 @@
             
             let propiedadesHTML = `<div class="properties-grid">`;
             
-            propiedadesFiltradas.slice(0, 3).forEach((prop, index) => {
+            propiedadesFiltradas.forEach((prop, index) => {
                 propiedadesHTML += crearTarjetaPropiedadDetallada(prop, index + 1);
             });
             
@@ -925,36 +967,73 @@
         }
 
         function crearTarjetaPropiedadDetallada(prop, numero) {
-            // Generar características
+            // Generar características con mejor formato
             const caracteristicas = [];
-            if (prop.cochera && prop.cochera !== 'No' && prop.cochera !== 'x') caracteristicas.push('Cochera');
-            if (prop.pileta && prop.pileta !== 'No') caracteristicas.push('Pileta');
-            if (prop.balcon && prop.balcon !== 'No' && prop.balcon !== 'x') caracteristicas.push('Balcón');
-            if (prop.acepta_mascotas && prop.acepta_mascotas !== 'No') caracteristicas.push('Mascotas');
-            if (prop.aire_acondicionado && prop.aire_acondicionado !== 'No') caracteristicas.push('Aire acondicionado');
+            
+            // Características principales
+            if (prop.cochera && prop.cochera !== 'No' && prop.cochera !== 'x') {
+                caracteristicas.push({text: 'Cochera', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Cochera', type: 'no'});
+            }
+            
+            if (prop.pileta && prop.pileta !== 'No') {
+                caracteristicas.push({text: 'Pileta', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Pileta', type: 'no'});
+            }
+            
+            if (prop.balcon && prop.balcon !== 'No' && prop.balcon !== 'x') {
+                caracteristicas.push({text: 'Balcón', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Balcón', type: 'no'});
+            }
+            
+            if (prop.acepta_mascotas && prop.acepta_mascotas !== 'No') {
+                caracteristicas.push({text: 'Mascotas', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Mascotas', type: 'no'});
+            }
+            
+            if (prop.aire_acondicionado && prop.aire_acondicionado !== 'No') {
+                caracteristicas.push({text: 'Aire A/C', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Aire A/C', type: 'no'});
+            }
             
             // Generar HTML de características
-            const featuresHTML = caracteristicas.length > 0 ? 
-                `<div class="property-features">
-                    ${caracteristicas.map(feat => `<span class="feature-badge">${feat}</span>`).join('')}
-                </div>` : '';
+            const featuresHTML = `
+                <div class="property-features">
+                    ${caracteristicas.map(feat => 
+                        `<span class="feature-badge feature-badge-${feat.type}">${feat.text}: ${feat.type === 'yes' ? '✅' : '❌'}</span>`
+                    ).join('')}
+                </div>`;
             
             // Generar HTML de imágenes (más imágenes para match)
             const imagenesHTML = prop.fotos && prop.fotos.length > 0 ? 
-                prop.fotos.slice(0, 6).map(foto => 
-                    `<img src="${foto}" alt="Imagen" class="property-image" onerror="this.style.display='none'">`
+                prop.fotos.slice(0, 8).map(foto => 
+                    `<img src="${foto}" alt="Imagen de ${prop.titulo}" class="property-image" onerror="this.style.display='none'">`
                 ).join('') : '<div style="text-align: center; padding: 1rem; color: #666;">📷 Fotos disponibles al contactar</div>';
+            
+            // Información adicional específica
+            const infoAdicional = [
+                prop.direccion ? `📍 <strong>Dirección:</strong> ${prop.direccion}` : '',
+                prop.orientacion ? `🧭 <strong>Orientación:</strong> ${prop.orientacion}` : '',
+                prop.expensas ? `💰 <strong>Expensas:</strong> $${prop.expensas.toLocaleString()} ${prop.moneda_expensas}` : '',
+                prop.amenities && prop.amenities !== 'No' ? `🏊 <strong>Amenities:</strong> ${prop.amenities}` : ''
+            ].filter(info => info !== '').join('<br>');
             
             return `
                 <div class="property-highlight">
                     <div class="property-header">
                         <h3>${numero}. ${prop.titulo}</h3>
-                        <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)}</span>
+                        <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)} • ID: ${prop.id_temporal}</span>
                     </div>
                     <div class="property-content">
                         <div class="property-price">
                             ${formatearPrecio(prop)}
                         </div>
+                        
                         <div class="property-details">
                             <div class="detail-item">🏠 ${prop.tipo.charAt(0).toUpperCase() + prop.tipo.slice(1)}</div>
                             <div class="detail-item">📍 ${prop.barrio}</div>
@@ -964,20 +1043,32 @@
                             <div class="detail-item">⭐ ${prop.estado || 'N/A'}</div>
                         </div>
                         
-                        ${prop.descripcion ? `<p style="margin: 1rem 0; font-style: italic; color: #555;">${prop.descripcion}</p>` : ''}
+                        ${prop.descripcion ? `
+                            <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--whatsapp-green);">
+                                <strong>📝 Descripción:</strong><br>
+                                ${prop.descripcion}
+                            </div>
+                        ` : ''}
+                        
+                        ${infoAdicional ? `
+                            <div style="margin: 1rem 0; font-size: 0.9rem;">
+                                ${infoAdicional}
+                            </div>
+                        ` : ''}
                         
                         ${featuresHTML}
                         
                         <div style="margin: 1rem 0;">
-                            <strong>📸 Imágenes:</strong>
+                            <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
                             <div class="property-images">
                                 ${imagenesHTML}
                             </div>
                         </div>
                         
-                        <div style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666;">
                             <strong>ID:</strong> ${prop.id_temporal} | 
-                            <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')}
+                            <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
+                            <strong>Fotos:</strong> ${prop.fotos ? prop.fotos.length : 0}
                         </div>
                     </div>
                 </div>
@@ -986,24 +1077,57 @@
 
         function filtrarPropiedadesConPrecision() {
             return propiedades.filter(prop => {
-                if (prop.operacion !== datosUsuario.operacion) return false;
-                if (prop.tipo !== datosUsuario.tipo) return false;
-                if (prop.barrio !== datosUsuario.barrio) return false;
+                console.log(`🔍 Comparando: ${prop.id_temporal}`, {
+                    operacion: {prop: prop.operacion, usuario: datosUsuario.operacion, match: prop.operacion === datosUsuario.operacion},
+                    tipo: {prop: prop.tipo, usuario: datosUsuario.tipo, match: prop.tipo === datosUsuario.tipo},
+                    barrio: {prop: prop.barrio, usuario: datosUsuario.barrio, match: prop.barrio === datosUsuario.barrio},
+                    ambientes: {prop: prop.ambientes, usuario: datosUsuario.ambientesNumero, match: cumpleAmbientes(prop.ambientes)}
+                });
                 
-                // Coincidencia de ambientes considerando "más de 4"
-                if (datosUsuario.ambientes === 'Más de 4 ambientes') {
-                    if (prop.ambientes < 4) return false;
-                } else if (datosUsuario.ambientes === 'Monoambiente') {
-                    if (prop.ambientes !== 1) return false;
-                } else {
-                    const ambientesUsuario = parseInt(datosUsuario.ambientes);
-                    if (prop.ambientes !== ambientesUsuario) return false;
+                // Coincidencia exacta de operación
+                if (prop.operacion !== datosUsuario.operacion) {
+                    console.log(`❌ No coincide operación: ${prop.operacion} vs ${datosUsuario.operacion}`);
+                    return false;
                 }
                 
-                if (!cumpleRangoPrecio(prop)) return false;
+                // Coincidencia exacta de tipo
+                if (prop.tipo !== datosUsuario.tipo) {
+                    console.log(`❌ No coincide tipo: ${prop.tipo} vs ${datosUsuario.tipo}`);
+                    return false;
+                }
                 
+                // Coincidencia de barrio
+                if (prop.barrio !== datosUsuario.barrio) {
+                    console.log(`❌ No coincide barrio: ${prop.barrio} vs ${datosUsuario.barrio}`);
+                    return false;
+                }
+                
+                // Coincidencia de ambientes
+                if (!cumpleAmbientes(prop.ambientes)) {
+                    console.log(`❌ No coincide ambientes: ${prop.ambientes} vs ${datosUsuario.ambientesNumero}`);
+                    return false;
+                }
+                
+                // Filtro por precio
+                if (!cumpleRangoPrecio(prop)) {
+                    console.log(`❌ No coincide precio: ${prop.precio} vs rango ${datosUsuario.precio}`);
+                    return false;
+                }
+                
+                console.log(`✅ COINCIDE: ${prop.id_temporal} - ${prop.titulo}`);
                 return true;
             });
+        }
+
+        function cumpleAmbientes(ambientesProp) {
+            if (datosUsuario.ambientes === 'Más de 4 ambientes') {
+                return ambientesProp >= 4;
+            } else if (datosUsuario.ambientes === 'Monoambiente') {
+                return ambientesProp === 1;
+            } else if (datosUsuario.ambientesNumero) {
+                return ambientesProp === datosUsuario.ambientesNumero;
+            }
+            return true;
         }
 
         function cumpleRangoPrecio(prop) {
@@ -1020,6 +1144,8 @@
                 default: return true;
             }
         }
+
+        // ... (resto de las funciones se mantienen igual)
 
         function procesarInteresDetectado(mensaje) {
             switch (mensaje) {
@@ -1130,7 +1256,8 @@
                     timestamp: new Date().toISOString(),
                     id: Date.now().toString(),
                     perfil: datosUsuario.perfilCompleto ? 'INTERESADO_REAL' : 'CONSULTA_GENERAL',
-                    propiedadesCoincidentes: propiedadesFiltradas.length
+                    propiedadesCoincidentes: propiedadesFiltradas.length,
+                    propiedadesIds: propiedadesFiltradas.map(p => p.id_temporal)
                 };
                 
                 const leadsExistentes = JSON.parse(localStorage.getItem('dante_leads') || '[]');

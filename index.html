@@ -4,12 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dante Propiedades - Chatbot Inteligente</title>
-    <meta name="description" content="Chatbot inteligente para buscar propiedades en venta y alquiler">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Estilos embebidos para evitar error 404 */
+        :root {
+            --whatsapp-green: #25D366;
+            --whatsapp-green-dark: #128C7E;
+            --user-message-bg: #DCF8C6;
+            --bot-message-bg: #FFFFFF;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .app-container { min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .app-header {
+            background: white; padding: 1.5rem 2rem; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-bottom: 3px solid var(--whatsapp-green);
+        }
+        
+        .header-content h1 { color: #2c3e50; margin-bottom: 0.5rem; }
+        .subtitle { color: #7f8c8d; margin-bottom: 0.5rem; }
+        
+        .deployment-info {
+            background: #e8f5e8; padding: 0.5rem 1rem; border-radius: 20px;
+            display: inline-block; font-size: 0.9rem; color: #27ae60;
+        }
+        
+        .main-content {
+            flex: 1; padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%;
+        }
+        
+        .chat-container {
+            background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden; display: flex; flex-direction: column; height: 70vh;
+        }
+        
+        .chat-header {
+            background: var(--whatsapp-green); color: white; padding: 1rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .chat-title { display: flex; align-items: center; gap: 1rem; }
+        .status-badge { 
+            background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; 
+            border-radius: 15px; font-size: 0.8rem; 
+        }
+        
+        .chat-actions { display: flex; gap: 0.5rem; }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;
+        }
+        
+        .chat-messages {
+            flex: 1; padding: 1.5rem; overflow-y: auto; 
+            background: #e5ddd5; background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" opacity="0.05"><path fill="%23000000" d="M30,30 Q50,20 70,30 T90,30 T70,30 T50,20 T30,30 Z"/></svg>');
+        }
+        
+        .message {
+            margin: 0.8rem 0; padding: 0.8rem 1.2rem; border-radius: 1rem;
+            max-width: 80%; word-wrap: break-word; animation: messageAppear 0.3s ease;
+        }
+        
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message { background: var(--user-message-bg); margin-left: auto; }
+        .bot-message { background: var(--bot-message-bg); margin-right: auto; }
+        
+        .welcome-message { max-width: 90% !important; background: white; border: 2px solid var(--whatsapp-green); }
+        
+        .opciones-grid { display: grid; gap: 0.8rem; margin: 1rem 0; }
+        .opcion-item {
+            display: flex; align-items: center; gap: 1rem; padding: 0.8rem;
+            background: #f8f9fa; border-radius: 0.5rem; border-left: 4px solid var(--whatsapp-green);
+        }
+        
+        .opcion-numero {
+            background: var(--whatsapp-green); color: white; width: 2rem; height: 2rem;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold;
+        }
+        
+        .tip {
+            background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 0.5rem;
+            padding: 0.8rem; margin-top: 1rem;
+        }
+        
+        .input-section { padding: 1.5rem; background: white; border-top: 1px solid #e0e0e0; }
+        .input-container { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        
+        .input-container input {
+            flex: 1; padding: 1rem 1.5rem; border: 2px solid #e0e0e0; border-radius: 2rem;
+            font-size: 1rem; outline: none;
+        }
+        
+        .input-container input:focus { border-color: var(--whatsapp-green); }
+        
+        .btn-primary {
+            background: var(--whatsapp-green); color: white; border: none;
+            padding: 1rem 2rem; border-radius: 2rem; cursor: pointer; font-weight: 600;
+            min-width: 120px;
+        }
+        
+        .quick-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+        .quick-btn {
+            background: #f8f9fa; border: 1px solid #dee2e6; padding: 0.5rem 1rem;
+            border-radius: 1rem; cursor: pointer;
+        }
+        
+        .app-footer {
+            background: #2c3e50; color: white; text-align: center; padding: 1.5rem;
+            margin-top: auto;
+        }
+        
+        .app-footer a { color: var(--whatsapp-green); text-decoration: none; margin: 0 0.5rem; }
+        
+        @media (max-width: 768px) {
+            .main-content { padding: 1rem; }
+            .chat-container { height: 65vh; }
+            .message { max-width: 90%; }
+            .input-container { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="header-content">
                 <h1>🏠 Dante Propiedades</h1>
@@ -20,7 +148,6 @@
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="chat-container">
                 <div class="chat-header">
@@ -30,12 +157,55 @@
                     </div>
                     <div class="chat-actions">
                         <button class="btn-secondary" onclick="resetChat()">🔄 Reiniciar</button>
-                        <button class="btn-secondary" onclick="mostrarInfo()">ℹ️ Info</button>
                     </div>
                 </div>
 
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Los mensajes se cargan dinámicamente -->
+                    <div class="message bot-message welcome-message">
+                        <div style="margin-bottom: 1rem;">
+                            <strong>¡Hola! Soy tu asistente virtual de <strong>Dante Propiedades</strong>. Te ayudo a encontrar la propiedad ideal.</strong>
+                        </div>
+                        <div>
+                            <p>Selecciona una opción escribiendo el número correspondiente:</p>
+                            <div class="opciones-grid">
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">1</span>
+                                    <span class="opcion-texto">🏠 Buscar por tipo de propiedad</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">2</span>
+                                    <span class="opcion-texto">📍 Buscar por barrio</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">3</span>
+                                    <span class="opcion-texto">💵 Buscar por operación (venta/alquiler)</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">4</span>
+                                    <span class="opcion-texto">🛏️ Buscar por cantidad de ambientes</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">5</span>
+                                    <span class="opcion-texto">💰 Buscar por precio máximo</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">6</span>
+                                    <span class="opcion-texto">🔎 Búsqueda libre por palabras clave</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">7</span>
+                                    <span class="opcion-texto">📊 Ver todas las propiedades</span>
+                                </div>
+                                <div class="opcion-item">
+                                    <span class="opcion-numero">8</span>
+                                    <span class="opcion-texto">ℹ️ Información del sistema</span>
+                                </div>
+                            </div>
+                            <div class="tip">
+                                💡 <strong>Tip:</strong> También puedes usar los botones rápidos o escribir directamente lo que buscas.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="input-section">
@@ -51,123 +221,153 @@
                         <button class="quick-btn" onclick="seleccionarOpcion(1)">1. Tipo</button>
                         <button class="quick-btn" onclick="seleccionarOpcion(2)">2. Barrio</button>
                         <button class="quick-btn" onclick="seleccionarOpcion(3)">3. Operación</button>
-                        <button class="quick-btn" onclick="seleccionarOpcion(4)">4. Ambientes</button>
                         <button class="quick-btn" onclick="seleccionarOpcion(6)">6. Libre</button>
                         <button class="quick-btn" onclick="seleccionarOpcion(7)">7. Todas</button>
                     </div>
                 </div>
             </div>
-
-            <!-- Info Panel -->
-            <aside class="info-panel" id="infoPanel">
-                <h3>ℹ️ Información del Sistema</h3>
-                <div class="info-content">
-                    <p><strong>Estado:</strong> 🟢 Operativo</p>
-                    <p><strong>Propiedades cargadas:</strong> <span id="propiedadesCount">5</span></p>
-                    <p><strong>Última actualización:</strong> <span id="lastUpdate">2024-11-24</span></p>
-                    <p><strong>URL del sitio:</strong> 
-                        <a href="https://artarona.github.io/dante-propiedades-chatbot/" target="_blank">
-                            artarona.github.io/dante-propiedades-chatbot/
-                        </a>
-                    </p>
-                    <hr>
-                    <h4>Características:</h4>
-                    <ul>
-                        <li>✅ Búsqueda inteligente por múltiples criterios</li>
-                        <li>✅ Interfaz tipo WhatsApp</li>
-                        <li>✅ Base de datos en tiempo real</li>
-                        <li>✅ Diseño responsive</li>
-                        <li>✅ Despliegue automático GitHub Pages</li>
-                    </ul>
-                </div>
-            </aside>
         </main>
 
-        <!-- Footer -->
         <footer class="app-footer">
             <p>&copy; 2024 Dante Propiedades | 
                 <a href="https://github.com/artarona/dante-propiedades-chatbot" target="_blank">
                     Ver código en GitHub
-                </a>
+                </a> | 
+                <strong>Propiedades activas: 5</strong>
             </p>
         </footer>
     </div>
 
-    <!-- Scripts (cargar solo si existen) -->
     <script>
-        // Cargar scripts dinámicamente para evitar errores 404
-        function cargarScript(src) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = resolve;
-                script.onerror = () => reject(new Error(`Error cargando ${src}`));
-                document.head.appendChild(script);
+        // JavaScript embebido para funcionalidad básica
+        let propiedades = [];
+        
+        // Cargar propiedades al iniciar
+        fetch('propiedades.json')
+            .then(response => response.json())
+            .then(data => {
+                propiedades = data;
+                console.log('✅ Propiedades cargadas:', propiedades.length);
+            })
+            .catch(error => {
+                console.error('❌ Error cargando propiedades:', error);
             });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('fechaActual').textContent = new Date().toLocaleDateString();
+            
+            document.getElementById('userInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') enviarMensaje();
+            });
+            
+            document.getElementById('userInput').focus();
+        });
+
+        function enviarMensaje() {
+            const input = document.getElementById('userInput');
+            const mensaje = input.value.trim();
+            
+            if (!mensaje) return;
+
+            // Mostrar mensaje del usuario
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `<div class="message user-message">${mensaje}</div>`;
+            
+            // Procesar respuesta
+            setTimeout(() => procesarRespuesta(mensaje), 500);
+            
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // Cargar scripts en orden
-        async function inicializarApp() {
-            try {
-                // Intentar cargar config.js
-                try {
-                    await cargarScript('config.js');
-                } catch (e) {
-                    console.warn('config.js no encontrado, usando configuración por defecto');
-                    // Configuración por defecto si no existe el archivo
-                    window.CONFIG = {
-                        OPCIONES_PRINCIPALES: {
-                            1: { texto: "🔍 Buscar por tipo de propiedad", filtro: "tipo" },
-                            2: { texto: "📍 Buscar por barrio", filtro: "barrio" },
-                            3: { texto: "💵 Buscar por operación", filtro: "operacion" },
-                            4: { texto: "🛏️ Buscar por ambientes", filtro: "ambientes" },
-                            5: { texto: "💰 Buscar por precio", filtro: "precio" },
-                            6: { texto: "🔎 Búsqueda libre", filtro: "libre" },
-                            7: { texto: "📊 Ver todas", filtro: "todas" },
-                            8: { texto: "ℹ️ Información", filtro: "info" }
-                        },
-                        MENSAJES: {
-                            BIENVENIDA: "¡Hola! Soy tu asistente virtual de <strong>Dante Propiedades</strong>.",
-                            SIN_RESULTADOS: "No encontré propiedades con esos criterios."
-                        }
-                    };
-                }
+        function procesarRespuesta(mensaje) {
+            const chatMessages = document.getElementById('chatMessages');
+            let respuesta = '';
+            
+            if (['1','2','3','4','5','6','7','8'].includes(mensaje)) {
+                respuesta = generarRespuestaOpcion(mensaje);
+            } else {
+                // Búsqueda libre
+                const resultados = buscarPropiedades(mensaje);
+                respuesta = generarRespuestaBusqueda(resultados, mensaje);
+            }
+            
+            chatMessages.innerHTML += respuesta;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
 
-                // Intentar cargar chatbot.js
-                try {
-                    await cargarScript('chatbot.js');
-                } catch (e) {
-                    console.warn('chatbot.js no encontrado, usando funcionalidad básica');
-                    window.ChatbotPropiedades = class {
-                        async inicializar() { 
-                            this.propiedades = []; 
-                            return true; 
-                        }
-                        procesarMensaje() {}
-                        reiniciarChat() { location.reload(); }
-                    };
-                }
+        function generarRespuestaOpcion(opcion) {
+            const opciones = {
+                '1': '🏠 <strong>Tipos de propiedad disponibles:</strong> casa, departamento, ph, oficina, terreno',
+                '2': '📍 <strong>Barrios disponibles:</strong> Parque Avellaneda, Boedo, Microcentro, Pilar',
+                '3': '💵 <strong>Operaciones:</strong> venta, alquiler',
+                '4': '🛏️ <strong>Ambientes:</strong> 1, 2, 3, 6, 8',
+                '5': '💰 <strong>Buscar por precio:</strong> Escribe el precio máximo que buscas',
+                '6': '🔎 <strong>Búsqueda libre:</strong> Escribe lo que estás buscando (ej: "casa con pileta")',
+                '7': generarTodasLasPropiedades(),
+                '8': 'ℹ️ <strong>Información del sistema:</strong> 5 propiedades cargadas • Chatbot activo'
+            };
+            
+            return `<div class="message bot-message">${opciones[opcion]}</div>`;
+        }
 
-                // Intentar cargar app.js
-                try {
-                    await cargarScript('app.js');
-                } catch (e) {
-                    console.warn('app.js no encontrado, usando inicialización básica');
-                    // Inicialización básica
-                    document.addEventListener('DOMContentLoaded', function() {
-                        document.getElementById('userInput').addEventListener('keypress', function(e) {
-                            if (e.key === 'Enter') enviarMensaje();
-                        });
-                    });
-                }
+        function buscarPropiedades(termino) {
+            const terminoLower = termino.toLowerCase();
+            return propiedades.filter(prop => 
+                prop.titulo.toLowerCase().includes(terminoLower) ||
+                prop.barrio.toLowerCase().includes(terminoLower) ||
+                prop.tipo.toLowerCase().includes(terminoLower) ||
+                prop.operacion.toLowerCase().includes(terminoLower) ||
+                (prop.descripcion && prop.descripcion.toLowerCase().includes(terminoLower))
+            );
+        }
 
-            } catch (error) {
-                console.error('Error inicializando la aplicación:', error);
+        function generarRespuestaBusqueda(resultados, termino) {
+            if (resultados.length === 0) {
+                return `<div class="message bot-message">🔍 No encontré propiedades para "<strong>${termino}</strong>". Intenta con otros términos.</div>`;
+            }
+            
+            let html = `<div class="message bot-message">✅ Encontré <strong>${resultados.length}</strong> propiedad(es) para "<strong>${termino}</strong>":</div>`;
+            
+            resultados.forEach(prop => {
+                html += `
+                <div class="message bot-message">
+                    <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; background: white;">
+                        <h3 style="margin: 0 0 10px 0;">${prop.titulo}</h3>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                            <span style="background: #f8f9fa; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">🏠 ${prop.tipo}</span>
+                            <span style="background: #f8f9fa; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">📍 ${prop.barrio}</span>
+                            <span style="background: #f8f9fa; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">🛏️ ${prop.ambientes} amb.</span>
+                            <span style="background: #f8f9fa; padding: 5px 10px; border-radius: 15px; font-size: 0.9em;">💰 ${formatearPrecio(prop)}</span>
+                        </div>
+                        ${prop.descripcion ? `<p style="margin: 10px 0; color: #666;">${prop.descripcion}</p>` : ''}
+                    </div>
+                </div>`;
+            });
+            
+            return html;
+        }
+
+        function generarTodasLasPropiedades() {
+            return generarRespuestaBusqueda(propiedades, "todas las propiedades");
+        }
+
+        function formatearPrecio(prop) {
+            if (!prop.precio || prop.precio === 0) return "Consultar precio";
+            const moneda = prop.moneda_precio === 'USD' ? 'U$D' : '$';
+            return `${moneda} ${prop.precio.toLocaleString()}`;
+        }
+
+        function seleccionarOpcion(numero) {
+            document.getElementById('userInput').value = numero;
+            enviarMensaje();
+        }
+
+        function resetChat() {
+            if (confirm('¿Reiniciar conversación?')) {
+                location.reload();
             }
         }
-
-        // Iniciar la carga de scripts
-        inicializarApp();
     </script>
 </body>
 </html>

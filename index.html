@@ -877,27 +877,32 @@
             
             agregarMensajeBot(resumenHTML);
             
-            // VERIFICAR PROPIEDADES QUE COINCIDEN - CORREGIDO
+            // VERIFICAR PROPIEDADES QUE COINCIDEN
             propiedadesFiltradas = filtrarPropiedadesConPrecision();
             datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
             
-            console.log('🎯 PROPIEDADES FILTRADAS:', propiedadesFiltradas);
-            console.log('🔍 CRITERIOS DE BÚSQUEDA:', datosUsuario);
+            console.log('🎯 RESULTADO FINAL FILTRADO:', propiedadesFiltradas);
             
-            // DEBUG: Mostrar qué propiedades coinciden
+            // DEBUG Mejorado
+            const propiedadesCoincidentes = propiedadesFiltradas.map(p => 
+                `${p.id_temporal}: ${p.titulo} (${p.precio} ${p.moneda_precio})`
+            ).join('<br>');
+            
             const debugInfo = `
                 <div class="debug-info">
-                    <strong>🔍 Coincidencias encontradas:</strong><br>
+                    <strong>🔍 Análisis de Coincidencias:</strong><br>
                     • Propiedades en base: ${propiedades.length}<br>
-                    • Coincidencias: ${propiedadesFiltradas.length}<br>
-                    • IDs encontrados: ${propiedadesFiltradas.map(p => p.id_temporal).join(', ') || 'Ninguno'}<br>
+                    • Coincidencias encontradas: ${propiedadesFiltradas.length}<br>
+                    • Propiedades que coinciden:<br>
+                    ${propiedadesCoincidentes || '&nbsp;&nbsp;→ Ninguna propiedad coincide'}<br>
+                    <em>Revisa la consola para detalles del filtrado</em>
                 </div>
             `;
             
             agregarMensajeBot(debugInfo);
             
             // VERIFICAR SI ES UN INTERESADO REAL
-            if (esInteresadoReal()) {
+            if (esInteresadoReal() && propiedadesFiltradas.length > 0) {
                 estado = 'interes_detectado';
                 datosUsuario.perfilCompleto = true;
                 setTimeout(() => mostrarPropiedadesDestacadas(), 1000);
@@ -906,7 +911,6 @@
                 setTimeout(() => solicitarContacto(), 1000);
             }
         }
-
 
         function obtenerTextoPrecio() {
             const esVenta = datosUsuario.operacion === 'venta';
@@ -1093,48 +1097,61 @@
             `;
         }
 
+
         function filtrarPropiedadesConPrecision() {
+            console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
+            
             return propiedades.filter(prop => {
+                console.log(`🔍 Analizando propiedad: ${prop.id_temporal} - ${prop.titulo}`);
                 let coincide = true;
                 
                 // 1. Coincidencia de OPERACIÓN
                 if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
                     console.log(`❌ ${prop.id_temporal}: No coincide operación (${prop.operacion} vs ${datosUsuario.operacion})`);
                     coincide = false;
+                } else {
+                    console.log(`✅ ${prop.id_temporal}: Coincide operación (${prop.operacion})`);
                 }
                 
                 // 2. Coincidencia de TIPO
                 if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
                     console.log(`❌ ${prop.id_temporal}: No coincide tipo (${prop.tipo} vs ${datosUsuario.tipo})`);
                     coincide = false;
+                } else {
+                    console.log(`✅ ${prop.id_temporal}: Coincide tipo (${prop.tipo})`);
                 }
                 
                 // 3. Coincidencia de BARRIO
                 if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
                     console.log(`❌ ${prop.id_temporal}: No coincide barrio (${prop.barrio} vs ${datosUsuario.barrio})`);
                     coincide = false;
+                } else {
+                    console.log(`✅ ${prop.id_temporal}: Coincide barrio (${prop.barrio})`);
                 }
                 
-                // 4. Coincidencia de AMBientes - CORREGIDO
+                // 4. Coincidencia de AMBientes
                 if (datosUsuario.ambientes && !cumpleAmbientes(prop.ambientes)) {
                     console.log(`❌ ${prop.id_temporal}: No coincide ambientes (${prop.ambientes} vs ${datosUsuario.ambientes})`);
                     coincide = false;
+                } else {
+                    console.log(`✅ ${prop.id_temporal}: Coincide ambientes (${prop.ambientes})`);
                 }
                 
-                // 5. Coincidencia de PRECIO - CORREGIDO
+                // 5. Coincidencia de PRECIO
                 if (datosUsuario.precio && !cumpleRangoPrecio(prop)) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide precio (${prop.precio} ${prop.moneda_precio} vs rango ${datosUsuario.precio})`);
+                    console.log(`❌ ${prop.id_temporal}: No coincide precio (${prop.precio} ${prop.moneda_precio} vs ${obtenerTextoPrecio()})`);
                     coincide = false;
+                } else {
+                    console.log(`✅ ${prop.id_temporal}: Coincide precio (${prop.precio} ${prop.moneda_precio})`);
                 }
                 
                 if (coincide) {
-                    console.log(`✅ ${prop.id_temporal}: ¡COINCIDE! - ${prop.titulo}`);
+                    console.log(`🎉 ${prop.id_temporal}: ¡COINCIDE COMPLETAMENTE!`);
                 }
                 
                 return coincide;
             });
         }
-
 
 
         function cumpleAmbientes(ambientesProp) {
@@ -1161,13 +1178,18 @@
         }
 
         function cumpleRangoPrecio(prop) {
+            console.log(`💰 Comparando precio: ${prop.precio} ${prop.moneda_precio} vs rango ${datosUsuario.precio} (${obtenerTextoPrecio()})`);
+            
             // Si la propiedad no tiene precio definido o es 0, solo coincide si el usuario seleccionó "Consultar precio"
             if (!prop.precio || prop.precio === 0) {
-                return datosUsuario.precio === '5'; // 5 = Consultar precio
+                const resultado = datosUsuario.precio === '5';
+                console.log(`🔍 Propiedad sin precio: ${resultado ? '✅ Coincide con "Consultar precio"' : '❌ No coincide'}`);
+                return resultado;
             }
             
             // Si el usuario seleccionó "Consultar precio", no aplicamos filtro de precio
             if (datosUsuario.precio === '5') {
+                console.log('✅ Usuario seleccionó "Consultar precio" - sin filtro');
                 return true;
             }
             
@@ -1177,20 +1199,36 @@
                 [100000, 200000, 500000];  // ARS
             
             // Verificar que la moneda coincida con la operación
-            if (esVenta && prop.moneda_precio !== 'USD') return false;
-            if (!esVenta && prop.moneda_precio !== 'ARS') return false;
-            
-            switch(datosUsuario.precio) {
-                case '1': return prop.precio <= rangos[0]; // Hasta 100k
-                case '2': return prop.precio > rangos[0] && prop.precio <= rangos[1]; // 100k-200k
-                case '3': return prop.precio > rangos[1] && prop.precio <= rangos[2]; // 200k-500k
-                case '4': return prop.precio > rangos[2]; // Más de 500k
-                default: return true;
+            if (esVenta && prop.moneda_precio !== 'USD') {
+                console.log(`❌ Moneda no coincide: Venta requiere USD pero propiedad tiene ${prop.moneda_precio}`);
+                return false;
             }
+            if (!esVenta && prop.moneda_precio !== 'ARS') {
+                console.log(`❌ Moneda no coincide: Alquiler requiere ARS pero propiedad tiene ${prop.moneda_precio}`);
+                return false;
+            }
+            
+            let resultado;
+            switch(datosUsuario.precio) {
+                case '1': 
+                    resultado = prop.precio <= rangos[0]; // Hasta 100k
+                    break;
+                case '2': 
+                    resultado = prop.precio > rangos[0] && prop.precio <= rangos[1]; // 100k-200k
+                    break;
+                case '3': 
+                    resultado = prop.precio > rangos[1] && prop.precio <= rangos[2]; // 200k-500k
+                    break;
+                case '4': 
+                    resultado = prop.precio > rangos[2]; // Más de 500k
+                    break;
+                default: 
+                    resultado = true;
+            }
+            
+            console.log(`🔍 Resultado filtro precio: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+            return resultado;
         }
-
-        // ... (resto de las funciones se mantienen igual)
-
         function procesarInteresDetectado(mensaje) {
             switch (mensaje) {
                 case '1':

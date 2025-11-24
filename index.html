@@ -441,9 +441,17 @@
             datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
             datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
             
-            // Extraer ambientes y reemplazar 8 por "más de 4"
-            const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb > 0))].sort((a, b) => a - b);
-            datosDinamicos.ambientes = ambientesUnicos.map(amb => amb === 8 ? 'más de 4' : amb);
+            // Extraer ambientes únicos - CORREGIDO
+            const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb >= 0))].sort((a, b) => a - b);
+            datosDinamicos.ambientes = ambientesUnicos.map(amb => {
+                if (amb === 0) return 'No aplica';
+                if (amb === 1) return 'Monoambiente';
+                if (amb >= 4) return 'Más de 4 ambientes';
+                return `${amb} ambientes`;
+            });
+            
+            // Eliminar duplicados
+            datosDinamicos.ambientes = [...new Set(datosDinamicos.ambientes)];
             
             console.log('📊 Datos extraídos:', datosDinamicos);
         }
@@ -867,16 +875,26 @@
                 </div>
             `;
             
-            // DEBUG: Mostrar información de filtrado
+            agregarMensajeBot(resumenHTML);
+            
+            // VERIFICAR PROPIEDADES QUE COINCIDEN - CORREGIDO
+            propiedadesFiltradas = filtrarPropiedadesConPrecision();
+            datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
+            
+            console.log('🎯 PROPIEDADES FILTRADAS:', propiedadesFiltradas);
+            console.log('🔍 CRITERIOS DE BÚSQUEDA:', datosUsuario);
+            
+            // DEBUG: Mostrar qué propiedades coinciden
             const debugInfo = `
                 <div class="debug-info">
-                    <strong>🔍 Debug Filtrado:</strong><br>
-                    Buscando: ${datosUsuario.operacion} | ${datosUsuario.tipo} | ${datosUsuario.ambientes} | ${datosUsuario.barrio}<br>
-                    Propiedades en base: ${propiedades.length}
+                    <strong>🔍 Coincidencias encontradas:</strong><br>
+                    • Propiedades en base: ${propiedades.length}<br>
+                    • Coincidencias: ${propiedadesFiltradas.length}<br>
+                    • IDs encontrados: ${propiedadesFiltradas.map(p => p.id_temporal).join(', ') || 'Ninguno'}<br>
                 </div>
             `;
             
-            agregarMensajeBot(resumenHTML + debugInfo);
+            agregarMensajeBot(debugInfo);
             
             // VERIFICAR SI ES UN INTERESADO REAL
             if (esInteresadoReal()) {
@@ -888,6 +906,7 @@
                 setTimeout(() => solicitarContacto(), 1000);
             }
         }
+
 
         function obtenerTextoPrecio() {
             const esVenta = datosUsuario.operacion === 'venta';
@@ -903,14 +922,13 @@
         function esInteresadoReal() {
             const tieneOperacionEspecifica = datosUsuario.operacion && datosUsuario.operacion !== 'otros';
             const tieneTipoEspecifico = datosUsuario.tipo && datosUsuario.tipo !== 'otros';
-            const tieneAmbientesEspecificos = datosUsuario.ambientes && datosUsuario.ambientes !== 'No aplica';
             const tieneBarrioEspecifico = datosUsuario.barrio && datosDinamicos.barrios.includes(datosUsuario.barrio);
-            const tienePrecioEspecifico = datosUsuario.precio && datosUsuario.precio !== '5';
             
-            return tieneOperacionEspecifica && tieneTipoEspecifico && tieneAmbientesEspecificos && 
-                   tieneBarrioEspecifico && tienePrecioEspecifico;
+            // Para ser "interesado real" necesita al menos operación, tipo y barrio específicos
+            return tieneOperacionEspecifica && tieneTipoEspecifico && tieneBarrioEspecifico;
         }
 
+        
         function mostrarPropiedadesDestacadas() {
             propiedadesFiltradas = filtrarPropiedadesConPrecision();
             datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
@@ -1077,70 +1095,96 @@
 
         function filtrarPropiedadesConPrecision() {
             return propiedades.filter(prop => {
-                console.log(`🔍 Comparando: ${prop.id_temporal}`, {
-                    operacion: {prop: prop.operacion, usuario: datosUsuario.operacion, match: prop.operacion === datosUsuario.operacion},
-                    tipo: {prop: prop.tipo, usuario: datosUsuario.tipo, match: prop.tipo === datosUsuario.tipo},
-                    barrio: {prop: prop.barrio, usuario: datosUsuario.barrio, match: prop.barrio === datosUsuario.barrio},
-                    ambientes: {prop: prop.ambientes, usuario: datosUsuario.ambientesNumero, match: cumpleAmbientes(prop.ambientes)}
-                });
+                let coincide = true;
                 
-                // Coincidencia exacta de operación
-                if (prop.operacion !== datosUsuario.operacion) {
-                    console.log(`❌ No coincide operación: ${prop.operacion} vs ${datosUsuario.operacion}`);
-                    return false;
+                // 1. Coincidencia de OPERACIÓN
+                if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
+                    console.log(`❌ ${prop.id_temporal}: No coincide operación (${prop.operacion} vs ${datosUsuario.operacion})`);
+                    coincide = false;
                 }
                 
-                // Coincidencia exacta de tipo
-                if (prop.tipo !== datosUsuario.tipo) {
-                    console.log(`❌ No coincide tipo: ${prop.tipo} vs ${datosUsuario.tipo}`);
-                    return false;
+                // 2. Coincidencia de TIPO
+                if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
+                    console.log(`❌ ${prop.id_temporal}: No coincide tipo (${prop.tipo} vs ${datosUsuario.tipo})`);
+                    coincide = false;
                 }
                 
-                // Coincidencia de barrio
-                if (prop.barrio !== datosUsuario.barrio) {
-                    console.log(`❌ No coincide barrio: ${prop.barrio} vs ${datosUsuario.barrio}`);
-                    return false;
+                // 3. Coincidencia de BARRIO
+                if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
+                    console.log(`❌ ${prop.id_temporal}: No coincide barrio (${prop.barrio} vs ${datosUsuario.barrio})`);
+                    coincide = false;
                 }
                 
-                // Coincidencia de ambientes
-                if (!cumpleAmbientes(prop.ambientes)) {
-                    console.log(`❌ No coincide ambientes: ${prop.ambientes} vs ${datosUsuario.ambientesNumero}`);
-                    return false;
+                // 4. Coincidencia de AMBientes - CORREGIDO
+                if (datosUsuario.ambientes && !cumpleAmbientes(prop.ambientes)) {
+                    console.log(`❌ ${prop.id_temporal}: No coincide ambientes (${prop.ambientes} vs ${datosUsuario.ambientes})`);
+                    coincide = false;
                 }
                 
-                // Filtro por precio
-                if (!cumpleRangoPrecio(prop)) {
-                    console.log(`❌ No coincide precio: ${prop.precio} vs rango ${datosUsuario.precio}`);
-                    return false;
+                // 5. Coincidencia de PRECIO - CORREGIDO
+                if (datosUsuario.precio && !cumpleRangoPrecio(prop)) {
+                    console.log(`❌ ${prop.id_temporal}: No coincide precio (${prop.precio} ${prop.moneda_precio} vs rango ${datosUsuario.precio})`);
+                    coincide = false;
                 }
                 
-                console.log(`✅ COINCIDE: ${prop.id_temporal} - ${prop.titulo}`);
-                return true;
+                if (coincide) {
+                    console.log(`✅ ${prop.id_temporal}: ¡COINCIDE! - ${prop.titulo}`);
+                }
+                
+                return coincide;
             });
         }
 
+
+
         function cumpleAmbientes(ambientesProp) {
-            if (datosUsuario.ambientes === 'Más de 4 ambientes') {
+            // Si usuario seleccionó "No aplica", coincide con propiedades que tienen 0 ambientes
+            if (datosUsuario.ambientes === 'No aplica') {
+                return ambientesProp === 0;
+            }
+            // Si usuario seleccionó "Más de 4 ambientes"
+            else if (datosUsuario.ambientes === 'Más de 4 ambientes') {
                 return ambientesProp >= 4;
-            } else if (datosUsuario.ambientes === 'Monoambiente') {
+            }
+            // Si usuario seleccionó "Monoambiente"
+            else if (datosUsuario.ambientes === 'Monoambiente') {
                 return ambientesProp === 1;
-            } else if (datosUsuario.ambientesNumero) {
-                return ambientesProp === datosUsuario.ambientesNumero;
+            }
+            // Si usuario seleccionó un número específico de ambientes
+            else {
+                const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
+                if (match) {
+                    return ambientesProp === parseInt(match[1]);
+                }
             }
             return true;
         }
 
         function cumpleRangoPrecio(prop) {
-            if (!prop.precio || prop.precio === 0) return false;
+            // Si la propiedad no tiene precio definido o es 0, solo coincide si el usuario seleccionó "Consultar precio"
+            if (!prop.precio || prop.precio === 0) {
+                return datosUsuario.precio === '5'; // 5 = Consultar precio
+            }
             
-            const rangos = datosUsuario.operacion === 'venta' ? 
-                [100000, 200000, 500000] : [100000, 200000, 500000];
+            // Si el usuario seleccionó "Consultar precio", no aplicamos filtro de precio
+            if (datosUsuario.precio === '5') {
+                return true;
+            }
+            
+            const esVenta = datosUsuario.operacion === 'venta';
+            const rangos = esVenta ? 
+                [100000, 200000, 500000] : // USD
+                [100000, 200000, 500000];  // ARS
+            
+            // Verificar que la moneda coincida con la operación
+            if (esVenta && prop.moneda_precio !== 'USD') return false;
+            if (!esVenta && prop.moneda_precio !== 'ARS') return false;
             
             switch(datosUsuario.precio) {
-                case '1': return prop.precio <= rangos[0];
-                case '2': return prop.precio > rangos[0] && prop.precio <= rangos[1];
-                case '3': return prop.precio > rangos[1] && prop.precio <= rangos[2];
-                case '4': return prop.precio > rangos[2];
+                case '1': return prop.precio <= rangos[0]; // Hasta 100k
+                case '2': return prop.precio > rangos[0] && prop.precio <= rangos[1]; // 100k-200k
+                case '3': return prop.precio > rangos[1] && prop.precio <= rangos[2]; // 200k-500k
+                case '4': return prop.precio > rangos[2]; // Más de 500k
                 default: return true;
             }
         }

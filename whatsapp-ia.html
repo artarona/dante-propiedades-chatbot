@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp IA - Dante Propiedades</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Overrides específicos para versión WhatsApp */
+        .whatsapp-version .chat-header {
+            background: #075E54;
+        }
+        .whatsapp-version .btn-primary {
+            background: #075E54;
+        }
+        .whatsapp-version .btn-primary:hover {
+            background: #128C7E;
+        }
+    </style>
+</head>
+<body class="whatsapp-version">
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>💬 WhatsApp IA - Dante Propiedades</h1>
+                <p class="subtitle">Asistente inteligente integrado con WhatsApp Business</p>
+                <div class="deployment-info">
+                    <small>✅ Conectado a API de WhatsApp | Modo simulador activo</small>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="chat-container">
+                <!-- Mismo contenido que index.html pero con estilo WhatsApp -->
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2>💬 Dante Propiedades WhatsApp</h2>
+                        <span class="status-badge">En línea • 2m</span>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="btn-secondary" onclick="resetChat()">🔄 Reiniciar</button>
+                        <button class="btn-secondary" onclick="exportarChat()">💾 Exportar</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message welcome-message">
+                        <strong>¡Hola! 👋 Soy el asistente de Dante Propiedades por WhatsApp.</strong>
+                        <p>Puedo ayudarte a encontrar propiedades en venta y alquiler. ¿Qué estás buscando?</p>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <div class="input-container">
+                        <input type="text" id="userInput" placeholder="Escribe tu mensaje aquí...">
+                        <button class="btn-primary" onclick="enviarMensaje()">➤ Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2024 Dante Propiedades - Versión WhatsApp IA | 
+                <a href="index.html">Volver al Chatbot Principal</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="chatbot.js"></script>
+    <script>
+        // Inicialización específica para versión WhatsApp
+        let chatbot;
+        document.addEventListener('DOMContentLoaded', function() {
+            chatbot = new ChatbotPropiedades();
+            chatbot.inicializar();
+            
+            document.getElementById('userInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') enviarMensaje();
+            });
+        });
+
+        function enviarMensaje() {
+            const input = document.getElementById('userInput');
+            const mensaje = input.value.trim();
+            if (!mensaje) return;
+            
+            chatbot.procesarMensaje(mensaje);
+            input.value = '';
+        }
+
+        function resetChat() {
+            if (confirm('¿Reiniciar conversación?')) {
+                document.getElementById('chatMessages').innerHTML = 
+                    '<div class="message bot-message welcome-message"><strong>¡Hola! 👋 Soy el asistente de Dante Propiedades por WhatsApp.</strong><p>Puedo ayudarte a encontrar propiedades en venta y alquiler. ¿Qué estás buscando?</p></div>';
+                chatbot.reiniciarChat();
+            }
+        }
+
+        function exportarChat() {
+            alert('Función de exportación para WhatsApp Business (próximamente)');
+        }
+    </script>
+</body>
+</html>

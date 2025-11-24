@@ -275,22 +275,52 @@
         
         let propiedades = [];
         let propiedadesFiltradas = [];
+        
+        // Datos dinámicos extraídos del JSON
+        let datosDinamicos = {
+            barrios: [],
+            tipos: [],
+            operaciones: [],
+            ambientes: []
+        };
 
-        // Cargar propiedades al iniciar
+        // Cargar propiedades y extraer datos dinámicos
         fetch('propiedades.json')
             .then(response => response.json())
             .then(data => {
                 propiedades = data;
                 console.log('✅ Propiedades cargadas:', propiedades.length);
+                
+                // Extraer datos dinámicos del JSON
+                extraerDatosDinamicos();
+                
+                // Iniciar chat después de cargar los datos
+                mostrarMenuInicio();
             })
             .catch(error => {
                 console.error('❌ Error cargando propiedades:', error);
+                // Mostrar mensaje de error al usuario
+                agregarMensajeBot('❌ Error cargando las propiedades. Por favor, recarga la página.');
             });
 
-        // Inicializar chat
-        document.addEventListener('DOMContentLoaded', function() {
-            mostrarMenuInicio();
+        function extraerDatosDinamicos() {
+            // Extraer barrios únicos
+            datosDinamicos.barrios = [...new Set(propiedades.map(p => p.barrio).filter(Boolean))];
             
+            // Extraer tipos de propiedad únicos
+            datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
+            
+            // Extraer operaciones únicas
+            datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
+            
+            // Extraer ambientes únicos y ordenarlos
+            datosDinamicos.ambientes = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb > 0))].sort((a, b) => a - b);
+            
+            console.log('📊 Datos dinámicos extraídos:', datosDinamicos);
+        }
+
+        // Inicializar chat después de cargar datos
+        document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('userInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     enviarMensaje();
@@ -353,28 +383,40 @@
 
         function mostrarMenuInicio() {
             estado = 'inicio';
-            const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
-                    <span class="menu-number">1</span>Venta
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
-                    <span class="menu-number">2</span>Alquiler
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>Tasación
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>Otros
-                </div>
-            `;
+            
+            // Generar opciones dinámicamente desde las operaciones disponibles
+            let opcionesHTML = '';
+            datosDinamicos.operaciones.forEach((operacion, index) => {
+                const numero = (index + 1).toString();
+                const operacionFormateada = operacion.charAt(0).toUpperCase() + operacion.slice(1);
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numero}')">
+                        <span class="menu-number">${numero}</span>${operacionFormateada}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otros" si no hay muchas operaciones
+            if (datosDinamicos.operaciones.length < 4) {
+                const numeroOtros = (datosDinamicos.operaciones.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numeroOtros}')">
+                        <span class="menu-number">${numeroOtros}</span>Otros
+                    </div>
+                `;
+            }
             
             agregarMensajeBot(
                 `¡Hola! Soy el asistente inmobiliario de Dante Propiedades. 😊<br><br>
                 <strong>Decime qué necesitás:</strong>`,
-                opciones
+                opcionesHTML
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4']);
+            const opcionesRapidas = datosDinamicos.operaciones.map((_, index) => (index + 1).toString());
+            if (datosDinamicos.operaciones.length < 4) {
+                opcionesRapidas.push((datosDinamicos.operaciones.length + 1).toString());
+            }
+            actualizarBotonesRapidos(opcionesRapidas);
         }
 
         function seleccionarOpcion(numero) {
@@ -412,176 +454,205 @@
         }
 
         function procesarInicio(mensaje) {
-            const opciones = {
-                '1': { texto: 'Venta', next: 'tipo_propiedad' },
-                '2': { texto: 'Alquiler', next: 'tipo_propiedad' },
-                '3': { texto: 'Tasación', next: 'contacto' },
-                '4': { texto: 'Otros', next: 'contacto' }
-            };
+            const maxOpciones = datosDinamicos.operaciones.length;
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
             
-            if (opciones[mensaje]) {
-                datosUsuario.operacion = opciones[mensaje].texto;
-                estado = opciones[mensaje].next;
+            // Si hay opción "Otros"
+            if (datosDinamicos.operaciones.length < 4) {
+                opcionesValidas.push((maxOpciones + 1).toString());
+            }
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
                 
-                agregarMensajeBot(`✅ Elegiste: <strong>${datosUsuario.operacion}</strong>`);
-                
-                if (estado === 'tipo_propiedad') {
+                if (indice < datosDinamicos.operaciones.length) {
+                    datosUsuario.operacion = datosDinamicos.operaciones[indice];
+                    estado = 'tipo_propiedad';
+                    agregarMensajeBot(`✅ Elegiste: <strong>${datosUsuario.operacion.charAt(0).toUpperCase() + datosUsuario.operacion.slice(1)}</strong>`);
                     mostrarMenuTipoPropiedad();
                 } else {
+                    // Opción "Otros"
+                    datosUsuario.operacion = 'otros';
+                    estado = 'contacto';
+                    agregarMensajeBot(`✅ Elegiste: <strong>Otros</strong>`);
                     solicitarContacto();
                 }
             } else {
-                agregarMensajeBot('❌ Por favor, respondé con el número de tu opción (1-4)');
+                agregarMensajeBot(`❌ Por favor, respondé con el número de tu opción (1-${opcionesValidas.length})`);
                 mostrarMenuInicio();
             }
         }
 
         function mostrarMenuTipoPropiedad() {
             estado = 'tipo_propiedad';
-            const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
-                    <span class="menu-number">1</span>Departamento
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
-                    <span class="menu-number">2</span>Casa
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>PH
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>Oficina
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('5')">
-                    <span class="menu-number">5</span>Terreno
-                </div>
-            `;
+            
+            let opcionesHTML = '';
+            datosDinamicos.tipos.forEach((tipo, index) => {
+                const numero = (index + 1).toString();
+                const tipoFormateado = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numero}')">
+                        <span class="menu-number">${numero}</span>${tipoFormateado}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otros" si no hay muchos tipos
+            if (datosDinamicos.tipos.length < 5) {
+                const numeroOtros = (datosDinamicos.tipos.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numeroOtros}')">
+                        <span class="menu-number">${numeroOtros}</span>Otros
+                    </div>
+                `;
+            }
             
             agregarMensajeBot(
                 `🏠 <strong>¿Qué tipo de propiedad te interesa?</strong>`,
-                opciones
+                opcionesHTML
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4', '5']);
+            const opcionesRapidas = datosDinamicos.tipos.map((_, index) => (index + 1).toString());
+            if (datosDinamicos.tipos.length < 5) {
+                opcionesRapidas.push((datosDinamicos.tipos.length + 1).toString());
+            }
+            actualizarBotonesRapidos(opcionesRapidas);
         }
 
         function procesarTipoPropiedad(mensaje) {
-            const tipos = {
-                '1': 'Departamento',
-                '2': 'Casa',
-                '3': 'PH',
-                '4': 'Oficina',
-                '5': 'Terreno'
-            };
+            const maxOpciones = datosDinamicos.tipos.length;
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
             
-            if (tipos[mensaje]) {
-                datosUsuario.tipo = tipos[mensaje];
-                estado = 'ambientes';
+            // Si hay opción "Otros"
+            if (datosDinamicos.tipos.length < 5) {
+                opcionesValidas.push((maxOpciones + 1).toString());
+            }
+            
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
                 
-                agregarMensajeBot(`✅ ${datosUsuario.tipo} — elegí el tipo:`);
-                mostrarMenuAmbientes();
+                if (indice < datosDinamicos.tipos.length) {
+                    datosUsuario.tipo = datosDinamicos.tipos[indice];
+                    estado = 'ambientes';
+                    agregarMensajeBot(`✅ ${datosUsuario.tipo.charAt(0).toUpperCase() + datosUsuario.tipo.slice(1)} — elegí el tipo:`);
+                    mostrarMenuAmbientes();
+                } else {
+                    // Opción "Otros"
+                    datosUsuario.tipo = 'otros';
+                    estado = 'barrio';
+                    agregarMensajeBot(`✅ Otros tipos de propiedad`);
+                    mostrarMenuBarrio();
+                }
             } else {
-                agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 5');
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${opcionesValidas.length}`);
                 mostrarMenuTipoPropiedad();
             }
         }
 
         function mostrarMenuAmbientes() {
-            const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
-                    <span class="menu-number">1</span>Monoambiente
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
-                    <span class="menu-number">2</span>2 ambientes
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>3 ambientes
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>4+ ambientes
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('5')">
-                    <span class="menu-number">5</span>No aplica
+            let opcionesHTML = '';
+            
+            // Generar opciones de ambientes desde los datos disponibles
+            datosDinamicos.ambientes.forEach((ambiente, index) => {
+                const numero = (index + 1).toString();
+                const textoAmbiente = ambiente === 1 ? 'Monoambiente' : `${ambiente} ambientes`;
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numero}')">
+                        <span class="menu-number">${numero}</span>${textoAmbiente}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "No aplica" para terrenos, oficinas, etc.
+            const numeroNoAplica = (datosDinamicos.ambientes.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item" onclick="seleccionarOpcion('${numeroNoAplica}')">
+                    <span class="menu-number">${numeroNoAplica}</span>No aplica
                 </div>
             `;
             
             agregarMensajeBot(
                 `🛏️ <strong>¿Cuántos ambientes necesitás?</strong>`,
-                opciones
+                opcionesHTML
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4', '5']);
+            const opcionesRapidas = datosDinamicos.ambientes.map((_, index) => (index + 1).toString());
+            opcionesRapidas.push((datosDinamicos.ambientes.length + 1).toString());
+            actualizarBotonesRapidos(opcionesRapidas);
         }
 
         function procesarAmbientes(mensaje) {
-            const ambientes = {
-                '1': 'Monoambiente',
-                '2': '2 ambientes',
-                '3': '3 ambientes',
-                '4': '4+ ambientes',
-                '5': 'No aplica'
-            };
+            const maxOpciones = datosDinamicos.ambientes.length + 1; // +1 por "No aplica"
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
             
-            if (ambientes[mensaje]) {
-                datosUsuario.ambientes = ambientes[mensaje];
-                estado = 'barrio';
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
                 
+                if (indice < datosDinamicos.ambientes.length) {
+                    const ambiente = datosDinamicos.ambientes[indice];
+                    datosUsuario.ambientes = ambiente === 1 ? 'Monoambiente' : `${ambiente} ambientes`;
+                } else {
+                    datosUsuario.ambientes = 'No aplica';
+                }
+                
+                estado = 'barrio';
                 agregarMensajeBot(`✅ ${datosUsuario.ambientes}`);
                 mostrarMenuBarrio();
             } else {
-                agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 5');
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${maxOpciones}`);
                 mostrarMenuAmbientes();
             }
         }
 
         function mostrarMenuBarrio() {
-            const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
-                    <span class="menu-number">1</span>Microcentro
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
-                    <span class="menu-number">2</span>Palermo
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>Belgrano
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>Recoleta
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('5')">
-                    <span class="menu-number">5</span>Otra zona
+            let opcionesHTML = '';
+            
+            // Generar opciones de barrios desde los datos disponibles
+            datosDinamicos.barrios.forEach((barrio, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numero}')">
+                        <span class="menu-number">${numero}</span>${barrio}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Otra zona"
+            const numeroOtraZona = (datosDinamicos.barrios.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item" onclick="seleccionarOpcion('${numeroOtraZona}')">
+                    <span class="menu-number">${numeroOtraZona}</span>Otra zona
                 </div>
             `;
             
             agregarMensajeBot(
                 `📍 <strong>¿En qué zona buscás?</strong>`,
-                opciones
+                opcionesHTML
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4', '5']);
+            const opcionesRapidas = datosDinamicos.barrios.map((_, index) => (index + 1).toString());
+            opcionesRapidas.push((datosDinamicos.barrios.length + 1).toString());
+            actualizarBotonesRapidos(opcionesRapidas);
         }
 
         function procesarBarrio(mensaje) {
-            const barrios = {
-                '1': 'Microcentro',
-                '2': 'Palermo',
-                '3': 'Belgrano',
-                '4': 'Recoleta',
-                '5': 'Otra zona'
-            };
+            const maxOpciones = datosDinamicos.barrios.length + 1; // +1 por "Otra zona"
+            const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
             
-            if (barrios[mensaje]) {
-                datosUsuario.barrio = barrios[mensaje];
+            if (opcionesValidas.includes(mensaje)) {
+                const indice = parseInt(mensaje) - 1;
                 
-                if (mensaje === '5') {
-                    agregarMensajeBot('📝 Escribí la zona que te interesa:');
-                    estado = 'barrio_texto';
-                } else {
+                if (indice < datosDinamicos.barrios.length) {
+                    datosUsuario.barrio = datosDinamicos.barrios[indice];
                     estado = 'precio';
                     agregarMensajeBot(`✅ Zona: ${datosUsuario.barrio}`);
                     mostrarMenuPrecio();
+                } else {
+                    agregarMensajeBot('📝 Escribí la zona que te interesa:');
+                    estado = 'barrio_texto';
                 }
             } else {
-                agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 5');
+                agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${maxOpciones}`);
                 mostrarMenuBarrio();
             }
         }
@@ -598,35 +669,52 @@
         }
 
         function mostrarMenuPrecio() {
-            const rangos = datosUsuario.operacion === 'Venta' ? 
-                ['Hasta U$D 100.000', 'U$D 100.000 - 200.000', 'U$D 200.000 - 500.000', 'Más de U$D 500.000'] :
-                ['Hasta $ 100.000', '$ 100.000 - 200.000', '$ 200.000 - 500.000', 'Más de $ 500.000'];
+            // Determinar rangos de precio basados en la operación
+            const esVenta = datosUsuario.operacion === 'venta';
+            const moneda = esVenta ? 'U$D' : '$';
             
-            const opciones = `
-                <div class="menu-item" onclick="seleccionarOpcion('1')">
-                    <span class="menu-number">1</span>${rangos[0]}
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('2')">
-                    <span class="menu-number">2</span>${rangos[1]}
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>${rangos[2]}
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>${rangos[3]}
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('5')">
-                    <span class="menu-number">5</span>Consultar precio
+            const rangos = esVenta ? 
+                [
+                    'Hasta U$D 100.000',
+                    'U$D 100.000 - 200.000', 
+                    'U$D 200.000 - 500.000',
+                    'Más de U$D 500.000'
+                ] : [
+                    'Hasta $ 100.000',
+                    '$ 100.000 - 200.000',
+                    '$ 200.000 - 500.000', 
+                    'Más de $ 500.000'
+                ];
+            
+            let opcionesHTML = '';
+            rangos.forEach((rango, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item" onclick="seleccionarOpcion('${numero}')">
+                        <span class="menu-number">${numero}</span>${rango}
+                    </div>
+                `;
+            });
+            
+            // Agregar opción "Consultar precio"
+            const numeroConsultar = (rangos.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item" onclick="seleccionarOpcion('${numeroConsultar}')">
+                    <span class="menu-number">${numeroConsultar}</span>Consultar precio
                 </div>
             `;
             
             agregarMensajeBot(
                 `💰 <strong>¿Qué rango de precio tenés en mente?</strong>`,
-                opciones
+                opcionesHTML
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4', '5']);
+            const opcionesRapidas = rangos.map((_, index) => (index + 1).toString());
+            opcionesRapidas.push((rangos.length + 1).toString());
+            actualizarBotonesRapidos(opcionesRapidas);
         }
+
+        // ... (el resto de las funciones se mantienen igual que antes)
 
         function procesarPrecio(mensaje) {
             const precios = ['1', '2', '3', '4', '5'];
@@ -722,11 +810,16 @@
             return propiedades.filter(prop => {
                 let coincide = true;
                 
-                if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion.toLowerCase()) {
+                if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
                     coincide = false;
                 }
                 
-                if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo.toLowerCase()) {
+                if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
+                    coincide = false;
+                }
+                
+                // Filtro por barrio si se seleccionó uno específico
+                if (datosUsuario.barrio && datosDinamicos.barrios.includes(datosUsuario.barrio) && prop.barrio !== datosUsuario.barrio) {
                     coincide = false;
                 }
                 
@@ -788,31 +881,15 @@
                     id: Date.now().toString()
                 };
                 
-                // Guardar en el archivo JSON del repositorio
-                const response = await fetch('leads.json');
-                let leads = [];
+                // Guardar en localStorage (simulación del archivo JSON)
+                const leadsExistentes = JSON.parse(localStorage.getItem('dante_leads') || '[]');
+                leadsExistentes.push(lead);
+                localStorage.setItem('dante_leads', JSON.stringify(leadsExistentes));
                 
-                if (response.ok) {
-                    leads = await response.json();
-                }
-                
-                leads.push(lead);
-                
-                // En un entorno real, aquí harías una llamada a una API para guardar el archivo
-                // Por ahora usamos localStorage como simulación
-                localStorage.setItem('dante_leads', JSON.stringify(leads));
                 console.log('✅ Lead guardado:', lead);
                 
             } catch (error) {
                 console.error('❌ Error guardando lead:', error);
-                // Fallback a localStorage
-                const leads = JSON.parse(localStorage.getItem('dante_leads') || '[]');
-                leads.push({
-                    ...datosUsuario,
-                    timestamp: new Date().toISOString(),
-                    id: Date.now().toString()
-                });
-                localStorage.setItem('dante_leads', JSON.stringify(leads));
             }
         }
 

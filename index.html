@@ -35,52 +35,7 @@
                 </div>
 
                 <div class="chat-messages" id="chatMessages">
-                    <!-- Mensaje de bienvenida -->
-                    <div class="message bot-message welcome-message">
-                        <div class="welcome-header">
-                            <strong>¡Hola! Soy tu asistente virtual de <strong>Dante Propiedades</strong>. Te ayudo a encontrar la propiedad ideal.</strong>
-                        </div>
-                        <div class="welcome-content">
-                            <p>Selecciona una opción escribiendo el número correspondiente:</p>
-                            <div class="opciones-grid">
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">1</span>
-                                    <span class="opcion-texto">🏠 Buscar por tipo de propiedad</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">2</span>
-                                    <span class="opcion-texto">📍 Buscar por barrio</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">3</span>
-                                    <span class="opcion-texto">💵 Buscar por operación (venta/alquiler)</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">4</span>
-                                    <span class="opcion-texto">🛏️ Buscar por cantidad de ambientes</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">5</span>
-                                    <span class="opcion-texto">💰 Buscar por precio máximo</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">6</span>
-                                    <span class="opcion-texto">🔎 Búsqueda libre por palabras clave</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">7</span>
-                                    <span class="opcion-texto">📊 Ver todas las propiedades</span>
-                                </div>
-                                <div class="opcion-item">
-                                    <span class="opcion-numero">8</span>
-                                    <span class="opcion-texto">ℹ️ Información del sistema</span>
-                                </div>
-                            </div>
-                            <div class="tip">
-                                💡 <strong>Tip:</strong> También puedes usar los botones rápidos o escribir directamente lo que buscas.
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Los mensajes se cargan dinámicamente -->
                 </div>
 
                 <div class="input-section">
@@ -123,17 +78,6 @@
                         <li>✅ Base de datos en tiempo real</li>
                         <li>✅ Diseño responsive</li>
                         <li>✅ Despliegue automático GitHub Pages</li>
-                        <li>✅ 8 opciones de búsqueda diferentes</li>
-                        <li>✅ Gestión de imágenes integrada</li>
-                    </ul>
-                    <hr>
-                    <h4>Opciones disponibles:</h4>
-                    <ul>
-                        <li>🏠 <strong>Tipos:</strong> casa, departamento, ph, oficina, terreno</li>
-                        <li>📍 <strong>Barrios:</strong> Parque Avellaneda, Boedo, Microcentro, Pilar</li>
-                        <li>💵 <strong>Operaciones:</strong> venta, alquiler</li>
-                        <li>🛏️ <strong>Ambientes:</strong> 0 a 8</li>
-                        <li>💰 <strong>Precios:</strong> USD y ARS</li>
                     </ul>
                 </div>
             </aside>
@@ -144,148 +88,86 @@
             <p>&copy; 2024 Dante Propiedades | 
                 <a href="https://github.com/artarona/dante-propiedades-chatbot" target="_blank">
                     Ver código en GitHub
-                </a> | 
-                <a href="whatsapp-ia.html">Versión WhatsApp IA</a> |
-                <strong>Propiedades activas: 5</strong>
+                </a>
             </p>
         </footer>
     </div>
 
-    <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="chatbot.js"></script>
-    <script src="app.js"></script>
-
+    <!-- Scripts (cargar solo si existen) -->
     <script>
-        // Inicialización inmediata para mostrar la página renderizada
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configurar fecha actual
-            const ahora = new Date();
-            document.getElementById('fechaActual').textContent = ahora.toLocaleDateString();
-            document.getElementById('lastUpdate').textContent = ahora.toLocaleDateString();
-            
-            // Focus en el input
-            document.getElementById('userInput').focus();
-            
-            // Configurar eventos
-            document.getElementById('userInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    enviarMensaje();
-                }
+        // Cargar scripts dinámicamente para evitar errores 404
+        function cargarScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Error cargando ${src}`));
+                document.head.appendChild(script);
             });
-            
-            console.log('✅ Dante Propiedades Chatbot - Inicializado correctamente');
-            console.log('🏠 Propiedades cargadas: 5');
-            console.log('🌐 Sitio activo: https://artarona.github.io/dante-propiedades-chatbot/');
-        });
-
-        // Funciones globales
-        function enviarMensaje() {
-            const input = document.getElementById('userInput');
-            const mensaje = input.value.trim();
-            
-            if (!mensaje) return;
-
-            // Mostrar mensaje del usuario inmediatamente
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.innerHTML += `<div class="message user-message">${mensaje}</div>`;
-            
-            // Procesar mensaje (simulación básica)
-            procesarMensajeUsuario(mensaje);
-            
-            // Limpiar input
-            input.value = '';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function procesarMensajeUsuario(mensaje) {
-            // Respuesta automática básica hasta que se cargue el chatbot completo
-            setTimeout(() => {
-                const chatMessages = document.getElementById('chatMessages');
-                let respuesta = '';
-                
-                if (mensaje === '1') {
-                    respuesta = `<div class="message bot-message">
-                        <strong>🔍 Buscar por tipo de propiedad</strong><br><br>
-                        <div class="valores-grid">
-                            <div class="valor-item"><span class="valor-numero">1</span><span class="valor-texto">Casa</span></div>
-                            <div class="valor-item"><span class="valor-numero">2</span><span class="valor-texto">Departamento</span></div>
-                            <div class="valor-item"><span class="valor-numero">3</span><span class="valor-texto">PH</span></div>
-                            <div class="valor-item"><span class="valor-numero">4</span><span class="valor-texto">Oficina</span></div>
-                            <div class="valor-item"><span class="valor-numero">5</span><span class="valor-texto">Terreno</span></div>
-                        </div>
-                        <br>Escribe el número del tipo de propiedad:
-                    </div>`;
-                } else if (mensaje === '7') {
-                    respuesta = `<div class="message bot-message">
-                        <strong>📊 Mostrando todas las propiedades (5 encontradas):</strong>
-                    </div>
-                    <div class="message bot-message property-message">
-                        <div class="property-card">
-                            <div class="property-header">
-                                <h3>Casa en Parque Avellaneda</h3>
-                                <span class="property-badge">venta</span>
-                            </div>
-                            <div class="property-details">
-                                <div class="detail-row">
-                                    <span class="detail-item">🏠 Casa</span>
-                                    <span class="detail-item">📍 Parque Avellaneda</span>
-                                    <span class="detail-item">🛏️ 3 amb.</span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-item">📏 306 m²</span>
-                                    <span class="detail-item">💰 U$D $169,000</span>
-                                </div>
-                            </div>
-                            <div class="property-description">
-                                <p>Ubicada en una zona tranquila y residencial, ofrece la combinación perfecta de vida urbana y refugio personal.</p>
-                            </div>
-                        </div>
-                    </div>`;
-                } else {
-                    respuesta = `<div class="message bot-message">
-                        <strong>🤖 Asistente Dante Propiedades</strong><br><br>
-                        He recibido tu mensaje: "<strong>${mensaje}</strong>"<br><br>
-                        <em>El sistema completo de búsqueda se cargará en segundos...</em><br><br>
-                        Mientras tanto, puedes probar:<br>
-                        • Escribir <strong>"7"</strong> para ver todas las propiedades<br>
-                        • Escribir <strong>"casa"</strong> para buscar casas<br>
-                        • Escribir <strong>"alquiler"</strong> para propiedades en alquiler
-                    </div>`;
+        // Cargar scripts en orden
+        async function inicializarApp() {
+            try {
+                // Intentar cargar config.js
+                try {
+                    await cargarScript('config.js');
+                } catch (e) {
+                    console.warn('config.js no encontrado, usando configuración por defecto');
+                    // Configuración por defecto si no existe el archivo
+                    window.CONFIG = {
+                        OPCIONES_PRINCIPALES: {
+                            1: { texto: "🔍 Buscar por tipo de propiedad", filtro: "tipo" },
+                            2: { texto: "📍 Buscar por barrio", filtro: "barrio" },
+                            3: { texto: "💵 Buscar por operación", filtro: "operacion" },
+                            4: { texto: "🛏️ Buscar por ambientes", filtro: "ambientes" },
+                            5: { texto: "💰 Buscar por precio", filtro: "precio" },
+                            6: { texto: "🔎 Búsqueda libre", filtro: "libre" },
+                            7: { texto: "📊 Ver todas", filtro: "todas" },
+                            8: { texto: "ℹ️ Información", filtro: "info" }
+                        },
+                        MENSAJES: {
+                            BIENVENIDA: "¡Hola! Soy tu asistente virtual de <strong>Dante Propiedades</strong>.",
+                            SIN_RESULTADOS: "No encontré propiedades con esos criterios."
+                        }
+                    };
                 }
-                
-                chatMessages.innerHTML += respuesta;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 1000);
-        }
 
-        function seleccionarOpcion(numero) {
-            document.getElementById('userInput').value = numero;
-            enviarMensaje();
-        }
+                // Intentar cargar chatbot.js
+                try {
+                    await cargarScript('chatbot.js');
+                } catch (e) {
+                    console.warn('chatbot.js no encontrado, usando funcionalidad básica');
+                    window.ChatbotPropiedades = class {
+                        async inicializar() { 
+                            this.propiedades = []; 
+                            return true; 
+                        }
+                        procesarMensaje() {}
+                        reiniciarChat() { location.reload(); }
+                    };
+                }
 
-        function resetChat() {
-            if (confirm('¿Estás seguro de que quieres reiniciar la conversación?')) {
-                location.reload();
+                // Intentar cargar app.js
+                try {
+                    await cargarScript('app.js');
+                } catch (e) {
+                    console.warn('app.js no encontrado, usando inicialización básica');
+                    // Inicialización básica
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.getElementById('userInput').addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') enviarMensaje();
+                        });
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error inicializando la aplicación:', error);
             }
         }
 
-        function mostrarInfo() {
-            const panel = document.getElementById('infoPanel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        // Ocultar panel info al hacer click fuera
-        document.addEventListener('click', function(event) {
-            const panel = document.getElementById('infoPanel');
-            const infoButton = document.querySelector('[onclick="mostrarInfo()"]');
-            
-            if (panel.style.display === 'block' && 
-                !panel.contains(event.target) && 
-                event.target !== infoButton) {
-                panel.style.display = 'none';
-            }
-        });
+        // Iniciar la carga de scripts
+        inicializarApp();
     </script>
 </body>
 </html>

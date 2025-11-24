@@ -9,10 +9,12 @@ class ChatbotPropiedades {
     }
 
     async inicializar() {
-        await this.cargarPropiedades();
-        this.generarValoresFiltro();
-        this.mostrarBienvenida();
-        this.actualizarUI();
+        const cargado = await this.cargarPropiedades();
+        if (cargado) {
+            this.generarValoresFiltro();
+            this.actualizarUI();
+        }
+        return cargado;
     }
 
     async cargarPropiedades() {
@@ -39,32 +41,6 @@ class ChatbotPropiedades {
             operacion: [...new Set(this.propiedades.map(p => p.operacion))].filter(Boolean),
             ambientes: [...new Set(this.propiedades.map(p => p.ambientes))].sort((a, b) => a - b).filter(amb => amb > 0)
         };
-    }
-
-    mostrarBienvenida() {
-        const mensaje = `
-            <div class="message bot-message welcome-message">
-                <div class="welcome-header">
-                    <strong>${this.config.MENSAJES.BIENVENIDA}</strong>
-                </div>
-                <div class="welcome-content">
-                    <p>${this.config.MENSAJES.INSTRUCCIONES}</p>
-                    <div class="opciones-grid">
-                        ${Object.entries(this.config.OPCIONES_PRINCIPALES).map(([numero, opcion]) => `
-                            <div class="opcion-item">
-                                <span class="opcion-numero">${numero}</span>
-                                <span class="opcion-texto">${opcion.icon} ${opcion.texto}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="tip">
-                        💡 <strong>Tip:</strong> También puedes usar los botones rápidos o escribir directamente lo que buscas.
-                    </div>
-                </div>
-            </div>
-        `;
-        this.agregarMensaje(mensaje);
-        this.estado = 'SELECCION_OPCION';
     }
 
     procesarMensaje(mensaje) {
@@ -162,7 +138,6 @@ class ChatbotPropiedades {
     }
 
     procesarBusquedaDirecta(texto) {
-        // Si el usuario escribe directamente, hacemos búsqueda libre
         this.realizarBusqueda('libre', texto);
     }
 
@@ -223,8 +198,7 @@ class ChatbotPropiedades {
             (prop.barrio && prop.barrio.toLowerCase().includes(terminoLower)) ||
             (prop.descripcion && prop.descripcion.toLowerCase().includes(terminoLower)) ||
             (prop.tipo && prop.tipo.toLowerCase().includes(terminoLower)) ||
-            (prop.operacion && prop.operacion.toLowerCase().includes(terminoLower)) ||
-            (prop.direccion && prop.direccion.toLowerCase().includes(terminoLower))
+            (prop.operacion && prop.operacion.toLowerCase().includes(terminoLower))
         );
     }
 
@@ -241,12 +215,11 @@ class ChatbotPropiedades {
                     <p><strong>Tipos disponibles:</strong> ${this.config.VALORES_FILTRO.tipo.join(', ')}</p>
                     <p><strong>Barrios disponibles:</strong> ${this.config.VALORES_FILTRO.barrio.join(', ')}</p>
                     <p><strong>Operaciones:</strong> ${this.config.VALORES_FILTRO.operacion.join(', ')}</p>
-                    <p><strong>Última búsqueda:</strong> ${this.historial.filter(h => h.tipo === 'busqueda').length} realizadas</p>
                 </div>
             </div>
         `;
         this.agregarMensaje(info);
-        setTimeout(() => this.mostrarOpcionesPrincipales(), 2000);
+        setTimeout(() => this.mostrarSugerenciaContinuar(), 2000);
     }
 
     mostrarResultados(propiedades, termino) {
@@ -263,7 +236,7 @@ class ChatbotPropiedades {
             });
         }
 
-        setTimeout(() => this.mostrarOpcionesPrincipales(), 1000);
+        setTimeout(() => this.mostrarSugerenciaContinuar(), 1000);
     }
 
     mostrarPropiedad(prop) {
@@ -311,7 +284,7 @@ class ChatbotPropiedades {
                 ` : ''}
 
                 <div class="property-footer">
-                    <small>ID: ${prop.id_temporal || 'N/A'} | Cargado: ${new Date(prop.fecha_procesamiento).toLocaleDateString()}</small>
+                    <small>ID: ${prop.id_temporal || 'N/A'}</small>
                 </div>
             </div>
         </div>`;
@@ -354,13 +327,11 @@ class ChatbotPropiedades {
         const mensajeDiv = document.createElement('div');
         mensajeDiv.innerHTML = mensaje;
         
-        // Animación de entrada
         mensajeDiv.style.opacity = '0';
         mensajeDiv.style.transform = 'translateY(10px)';
         
         chatMessages.appendChild(mensajeDiv);
         
-        // Animación
         setTimeout(() => {
             mensajeDiv.style.transition = `all ${this.config.UI.timing.animacionEntrada}s ease`;
             mensajeDiv.style.opacity = '1';
@@ -370,19 +341,15 @@ class ChatbotPropiedades {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    mostrarSugerenciaContinuar() {
+        this.estado = 'SELECCION_OPCION';
+        this.agregarMensajeBot(`¿Necesitas algo más? Escribe un número del 1 al 8 o tu búsqueda directa.`);
+    }
+
     escapeHTML(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    mostrarOpcionesPrincipales() {
-        this.estado = 'SELECCION_OPCION';
-        // No mostramos las opciones nuevamente para no saturar el chat
-        // En su lugar, mostramos un mensaje sutil
-        if (this.historial.filter(h => h.tipo === 'usuario').length > 2) {
-            this.agregarMensajeBot(`¿Necesitas algo más? Escribe un número del 1 al 8 o tu búsqueda directa.`);
-        }
     }
 
     reiniciarChat() {
@@ -391,20 +358,41 @@ class ChatbotPropiedades {
         this.historial = [];
         document.getElementById('chatMessages').innerHTML = '';
         this.mostrarBienvenida();
-        this.agregarMensajeBot(this.config.MENSAJES.REINICIAR);
+    }
+
+    mostrarBienvenida() {
+        const mensaje = `
+            <div class="message bot-message welcome-message">
+                <div class="welcome-header">
+                    <strong>${this.config.MENSAJES.BIENVENIDA}</strong>
+                </div>
+                <div class="welcome-content">
+                    <p>${this.config.MENSAJES.INSTRUCCIONES}</p>
+                    <div class="opciones-grid">
+                        ${Object.entries(this.config.OPCIONES_PRINCIPALES).map(([numero, opcion]) => `
+                            <div class="opcion-item">
+                                <span class="opcion-numero">${numero}</span>
+                                <span class="opcion-texto">${opcion.icon} ${opcion.texto}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="tip">
+                        💡 <strong>Tip:</strong> También puedes usar los botones rápidos o escribir directamente lo que buscas.
+                    </div>
+                </div>
+            </div>
+        `;
+        this.agregarMensaje(mensaje);
+        this.estado = 'SELECCION_OPCION';
+    }
+
+    mostrarError(mensaje) {
+        this.agregarMensajeBot(`❌ ${mensaje}`);
     }
 
     actualizarUI() {
-        // Actualizar contadores en la UI
         if (document.getElementById('propiedadesCount')) {
             document.getElementById('propiedadesCount').textContent = this.propiedades.length;
-        }
-        if (document.getElementById('lastUpdate')) {
-            const ultimaProp = this.propiedades.reduce((latest, prop) => {
-                const propDate = new Date(prop.fecha_procesamiento);
-                return propDate > latest ? propDate : latest;
-            }, new Date(0));
-            document.getElementById('lastUpdate').textContent = ultimaProp.toLocaleDateString();
         }
     }
 }

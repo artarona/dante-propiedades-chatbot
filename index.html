@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dante Propiedades - Asistente Inmobiliario</title>
     <style>
-        /* Estilos WhatsApp-like */
+        /* Estilos WhatsApp-like (igual que antes) */
         :root {
             --whatsapp-green: #25D366;
             --whatsapp-dark: #075E54;
@@ -40,6 +40,15 @@
         .header .subtitle {
             font-size: 0.9rem;
             opacity: 0.8;
+        }
+        
+        .admin-link {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            color: white;
+            text-decoration: none;
+            font-size: 0.8rem;
         }
         
         .chat-container {
@@ -218,25 +227,6 @@
             font-size: 0.9rem;
         }
         
-        .export-section {
-            background: #e8f5e8;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            text-align: center;
-        }
-        
-        .export-btn {
-            background: var(--whatsapp-green);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 2rem;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 0.5rem;
-        }
-        
         @media (max-width: 768px) {
             .message {
                 max-width: 95%;
@@ -250,6 +240,7 @@
 </head>
 <body>
     <div class="header">
+        <a href="admin.html" class="admin-link">🔧 Admin</a>
         <h1>🏠 Dante Propiedades</h1>
         <div class="subtitle">Asistente Inmobiliario • En línea</div>
     </div>
@@ -278,7 +269,8 @@
             ambientes: '',
             barrio: '',
             precio: '',
-            contacto: ''
+            contacto: '',
+            propiedadesCoincidentes: 0
         };
         
         let propiedades = [];
@@ -403,6 +395,9 @@
                     break;
                 case 'barrio':
                     procesarBarrio(mensaje);
+                    break;
+                case 'barrio_texto':
+                    procesarBarrioTexto(mensaje);
                     break;
                 case 'precio':
                     procesarPrecio(mensaje);
@@ -591,6 +586,17 @@
             }
         }
 
+        function procesarBarrioTexto(mensaje) {
+            if (mensaje.trim().length > 0) {
+                datosUsuario.barrio = mensaje;
+                estado = 'precio';
+                agregarMensajeBot(`✅ Zona: ${datosUsuario.barrio}`);
+                mostrarMenuPrecio();
+            } else {
+                agregarMensajeBot('❌ Por favor, escribí la zona que te interesa');
+            }
+        }
+
         function mostrarMenuPrecio() {
             const rangos = datosUsuario.operacion === 'Venta' ? 
                 ['Hasta U$D 100.000', 'U$D 100.000 - 200.000', 'U$D 200.000 - 500.000', 'Más de U$D 500.000'] :
@@ -656,6 +662,12 @@
             const partes = mensaje.split('-').map(part => part.trim());
             if (partes.length >= 3) {
                 datosUsuario.contacto = mensaje;
+                
+                // Filtrar propiedades y guardar lead
+                propiedadesFiltradas = filtrarPropiedades();
+                datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
+                guardarLead();
+                
                 estado = 'final';
                 
                 agregarMensajeBot(`✅ ¡Perfecto! Tus datos fueron registrados.`);
@@ -667,9 +679,6 @@
         }
 
         function mostrarOpcionesFinales() {
-            // Filtrar propiedades según las preferencias
-            propiedadesFiltradas = filtrarPropiedades();
-            
             const opciones = `
                 <div class="menu-item" onclick="seleccionarOpcion('1')">
                     <span class="menu-number">1</span>Ver propiedades filtradas (${propiedadesFiltradas.length})
@@ -678,20 +687,18 @@
                     <span class="menu-number">2</span>Agendar llamada con asesor
                 </div>
                 <div class="menu-item" onclick="seleccionarOpcion('3')">
-                    <span class="menu-number">3</span>Descargar información en Excel
-                </div>
-                <div class="menu-item" onclick="seleccionarOpcion('4')">
-                    <span class="menu-number">4</span>Volver al inicio
+                    <span class="menu-number">3</span>Volver al inicio
                 </div>
             `;
             
             agregarMensajeBot(
                 `🎉 <strong>¡Listo! Tenemos ${propiedadesFiltradas.length} propiedades que coinciden con tu búsqueda.</strong><br><br>
+                Un asesor se contactará contigo pronto.<br><br>
                 <strong>¿Qué querés hacer ahora?</strong>`,
                 opciones
             );
             
-            actualizarBotonesRapidos(['1', '2', '3', '4']);
+            actualizarBotonesRapidos(['1', '2', '3']);
         }
 
         function procesarFinal(mensaje) {
@@ -703,20 +710,16 @@
                     agendarLlamada();
                     break;
                 case '3':
-                    descargarExcel();
-                    break;
-                case '4':
                     reiniciarChat();
                     break;
                 default:
-                    agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 4');
+                    agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 3');
                     mostrarOpcionesFinales();
             }
         }
 
         function filtrarPropiedades() {
             return propiedades.filter(prop => {
-                // Filtro básico por operación y tipo
                 let coincide = true;
                 
                 if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion.toLowerCase()) {
@@ -775,85 +778,42 @@
                 • Contacto: ${datosUsuario.contacto}<br><br>
                 <em>Gracias por confiar en Dante Propiedades 🏠</em>`
             );
-            
-            // Guardar lead en localStorage (simulación)
-            guardarLead();
         }
 
-        function descargarExcel() {
-            // Crear datos para Excel
-            const datosExcel = propiedadesFiltradas.map(prop => ({
-                'Título': prop.titulo,
-                'Tipo': prop.tipo,
-                'Barrio': prop.barrio,
-                'Operación': prop.operacion,
-                'Ambientes': prop.ambientes,
-                'Metros': prop.metros_cuadrados,
-                'Precio': formatearPrecio(prop),
-                'Descripción': prop.descripcion
-            }));
-            
-            // Agregar información del usuario
-            datosExcel.push({
-                'Título': 'INFORMACIÓN DEL CLIENTE',
-                'Tipo': datosUsuario.tipo,
-                'Barrio': datosUsuario.barrio,
-                'Operación': datosUsuario.operacion,
-                'Ambientes': datosUsuario.ambientes,
-                'Metros': '',
-                'Precio': datosUsuario.precio,
-                'Descripción': datosUsuario.contacto
-            });
-            
-            // Convertir a CSV
-            const csv = convertirAExcel(datosExcel);
-            descargarArchivo(csv, 'propiedades-dante.csv');
-            
-            agregarMensajeBot(
-                `📊 <strong>Excel descargado con ${propiedadesFiltradas.length} propiedades</strong><br><br>
-                También guardamos tu información para que un asesor te contacte.`
-            );
-            
-            guardarLead();
-        }
-
-        function convertirAExcel(datos) {
-            const cabeceras = Object.keys(datos[0]);
-            let csv = cabeceras.join(',') + '\n';
-            
-            datos.forEach(fila => {
-                const valores = cabeceras.map(header => {
-                    let valor = fila[header] || '';
-                    // Escapar comas y comillas
-                    if (typeof valor === 'string' && valor.includes(',')) {
-                        valor = `"${valor}"`;
-                    }
-                    return valor;
+        async function guardarLead() {
+            try {
+                const lead = {
+                    ...datosUsuario,
+                    timestamp: new Date().toISOString(),
+                    id: Date.now().toString()
+                };
+                
+                // Guardar en el archivo JSON del repositorio
+                const response = await fetch('leads.json');
+                let leads = [];
+                
+                if (response.ok) {
+                    leads = await response.json();
+                }
+                
+                leads.push(lead);
+                
+                // En un entorno real, aquí harías una llamada a una API para guardar el archivo
+                // Por ahora usamos localStorage como simulación
+                localStorage.setItem('dante_leads', JSON.stringify(leads));
+                console.log('✅ Lead guardado:', lead);
+                
+            } catch (error) {
+                console.error('❌ Error guardando lead:', error);
+                // Fallback a localStorage
+                const leads = JSON.parse(localStorage.getItem('dante_leads') || '[]');
+                leads.push({
+                    ...datosUsuario,
+                    timestamp: new Date().toISOString(),
+                    id: Date.now().toString()
                 });
-                csv += valores.join(',') + '\n';
-            });
-            
-            return csv;
-        }
-
-        function descargarArchivo(contenido, nombre) {
-            const blob = new Blob([contenido], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nombre;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-
-        function guardarLead() {
-            const leads = JSON.parse(localStorage.getItem('dante_leads') || '[]');
-            leads.push({
-                ...datosUsuario,
-                timestamp: new Date().toISOString(),
-                propiedades: propiedadesFiltradas.length
-            });
-            localStorage.setItem('dante_leads', JSON.stringify(leads));
+                localStorage.setItem('dante_leads', JSON.stringify(leads));
+            }
         }
 
         function formatearPrecio(prop) {
@@ -883,7 +843,8 @@
                 ambientes: '',
                 barrio: '',
                 precio: '',
-                contacto: ''
+                contacto: '',
+                propiedadesCoincidentes: 0
             };
             
             document.getElementById('chatMessages').innerHTML = '';

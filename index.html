@@ -696,6 +696,9 @@
             );
         }
 
+
+
+
         function procesarAmbientes(mensaje) {
             const maxOpciones = datosDinamicos.ambientes.length + 1;
             const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
@@ -729,6 +732,8 @@
             }
         }
 
+     
+     
         function mostrarMenuBarrio() {
             estado = 'barrio';
             
@@ -1100,135 +1105,159 @@
 
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
+            console.log('📋 PROPIEDADES DISPONIBLES:', propiedades.map(p => ({
+                id: p.id_temporal,
+                operacion: p.operacion,
+                tipo: p.tipo,
+                barrio: p.barrio,
+                ambientes: p.ambientes,
+                precio: p.precio,
+                moneda: p.moneda_precio
+            })));
             
-            return propiedades.filter(prop => {
-                console.log(`🔍 Analizando propiedad: ${prop.id_temporal} - ${prop.titulo}`);
-                let coincide = true;
+            const propiedadesCoincidentes = propiedades.filter(prop => {
+                console.log(`\n🔍 Analizando: ${prop.id_temporal} - "${prop.titulo}"`);
                 
-                // 1. Coincidencia de OPERACIÓN
+                // 1. OPERACIÓN - Coincidencia exacta
                 if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide operación (${prop.operacion} vs ${datosUsuario.operacion})`);
-                    coincide = false;
-                } else {
-                    console.log(`✅ ${prop.id_temporal}: Coincide operación (${prop.operacion})`);
+                    console.log(`❌ Operación: ${prop.operacion} ≠ ${datosUsuario.operacion}`);
+                    return false;
                 }
+                console.log(`✅ Operación: ${prop.operacion} = ${datosUsuario.operacion}`);
                 
-                // 2. Coincidencia de TIPO
+                // 2. TIPO - Coincidencia exacta
                 if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide tipo (${prop.tipo} vs ${datosUsuario.tipo})`);
-                    coincide = false;
-                } else {
-                    console.log(`✅ ${prop.id_temporal}: Coincide tipo (${prop.tipo})`);
+                    console.log(`❌ Tipo: ${prop.tipo} ≠ ${datosUsuario.tipo}`);
+                    return false;
                 }
+                console.log(`✅ Tipo: ${prop.tipo} = ${datosUsuario.tipo}`);
                 
-                // 3. Coincidencia de BARRIO
+                // 3. BARRIO - Coincidencia exacta
                 if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide barrio (${prop.barrio} vs ${datosUsuario.barrio})`);
-                    coincide = false;
-                } else {
-                    console.log(`✅ ${prop.id_temporal}: Coincide barrio (${prop.barrio})`);
+                    console.log(`❌ Barrio: ${prop.barrio} ≠ ${datosUsuario.barrio}`);
+                    return false;
                 }
+                console.log(`✅ Barrio: ${prop.barrio} = ${datosUsuario.barrio}`);
                 
-                // 4. Coincidencia de AMBientes
+                // 4. AMBientes - Usar función corregida
                 if (datosUsuario.ambientes && !cumpleAmbientes(prop.ambientes)) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide ambientes (${prop.ambientes} vs ${datosUsuario.ambientes})`);
-                    coincide = false;
-                } else {
-                    console.log(`✅ ${prop.id_temporal}: Coincide ambientes (${prop.ambientes})`);
+                    console.log(`❌ Ambientes: ${prop.ambientes} no cumple criterio`);
+                    return false;
                 }
+                console.log(`✅ Ambientes: ${prop.ambientes} cumple criterio`);
                 
-                // 5. Coincidencia de PRECIO
+                // 5. PRECIO - Usar función corregida
                 if (datosUsuario.precio && !cumpleRangoPrecio(prop)) {
-                    console.log(`❌ ${prop.id_temporal}: No coincide precio (${prop.precio} ${prop.moneda_precio} vs ${obtenerTextoPrecio()})`);
-                    coincide = false;
-                } else {
-                    console.log(`✅ ${prop.id_temporal}: Coincide precio (${prop.precio} ${prop.moneda_precio})`);
+                    console.log(`❌ Precio: ${prop.precio} ${prop.moneda_precio} no cumple rango`);
+                    return false;
                 }
+                console.log(`✅ Precio: ${prop.precio} ${prop.moneda_precio} cumple rango`);
                 
-                if (coincide) {
-                    console.log(`🎉 ${prop.id_temporal}: ¡COINCIDE COMPLETAMENTE!`);
-                }
-                
-                return coincide;
+                console.log(`🎉 ${prop.id_temporal}: ¡COINCIDE COMPLETAMENTE!`);
+                return true;
             });
+            
+            console.log('📊 RESULTADO FINAL:', propiedadesCoincidentes.map(p => p.id_temporal));
+            return propiedadesCoincidentes;
         }
 
-
-        function cumpleAmbientes(ambientesProp) {
+       function cumpleAmbientes(ambientesProp) {
+            console.log(`🛏️ Comparando ambientes: Propiedad ${ambientesProp} vs Usuario "${datosUsuario.ambientes}"`);
+            
+            // Limpiar el texto por si hay duplicados
+            const ambientesUsuario = datosUsuario.ambientes.replace(/\s+ambientes\s+ambientes/, ' ambientes').trim();
+            
             // Si usuario seleccionó "No aplica", coincide con propiedades que tienen 0 ambientes
-            if (datosUsuario.ambientes === 'No aplica') {
-                return ambientesProp === 0;
+            if (ambientesUsuario === 'No aplica') {
+                const resultado = ambientesProp === 0;
+                console.log(`🔍 "No aplica" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                return resultado;
             }
             // Si usuario seleccionó "Más de 4 ambientes"
-            else if (datosUsuario.ambientes === 'Más de 4 ambientes') {
-                return ambientesProp >= 4;
+            else if (ambientesUsuario === 'Más de 4 ambientes') {
+                const resultado = ambientesProp >= 4;
+                console.log(`🔍 "Más de 4 ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                return resultado;
             }
             // Si usuario seleccionó "Monoambiente"
-            else if (datosUsuario.ambientes === 'Monoambiente') {
-                return ambientesProp === 1;
+            else if (ambientesUsuario === 'Monoambiente') {
+                const resultado = ambientesProp === 1;
+                console.log(`🔍 "Monoambiente" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                return resultado;
             }
-            // Si usuario seleccionó un número específico de ambientes
-            else {
-                const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
+            // Si usuario seleccionó un número específico de ambientes (ej: "2 ambientes")
+            else if (ambientesUsuario.includes('ambientes')) {
+                const match = ambientesUsuario.match(/(\d+)\s*ambientes/);
                 if (match) {
-                    return ambientesProp === parseInt(match[1]);
+                    const ambientesRequeridos = parseInt(match[1]);
+                    const resultado = ambientesProp === ambientesRequeridos;
+                    console.log(`🔍 "${ambientesRequeridos} ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                    return resultado;
                 }
             }
+            
+            console.log(`🔍 Sin criterio específico de ambientes: ✅ Coincide`);
             return true;
         }
 
         function cumpleRangoPrecio(prop) {
-            console.log(`💰 Comparando precio: ${prop.precio} ${prop.moneda_precio} vs rango ${datosUsuario.precio} (${obtenerTextoPrecio()})`);
+            console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs "${obtenerTextoPrecio()}"`);
             
-            // Si la propiedad no tiene precio definido o es 0, solo coincide si el usuario seleccionó "Consultar precio"
+            // Si la propiedad no tiene precio, solo coincide con "Consultar precio"
             if (!prop.precio || prop.precio === 0) {
-                const resultado = datosUsuario.precio === '5';
-                console.log(`🔍 Propiedad sin precio: ${resultado ? '✅ Coincide con "Consultar precio"' : '❌ No coincide'}`);
-                return resultado;
+                return datosUsuario.precio === '5';
             }
             
-            // Si el usuario seleccionó "Consultar precio", no aplicamos filtro de precio
+            // Si usuario seleccionó "Consultar precio", coincide con cualquier propiedad con precio
             if (datosUsuario.precio === '5') {
-                console.log('✅ Usuario seleccionó "Consultar precio" - sin filtro');
                 return true;
             }
             
             const esVenta = datosUsuario.operacion === 'venta';
+            
+            // VERIFICACIÓN CRÍTICA: Asegurar que la moneda coincida con la operación
+            if (esVenta && prop.moneda_precio !== 'USD') {
+                console.log(`❌ Moneda: Venta requiere USD pero propiedad tiene ${prop.moneda_precio}`);
+                return false;
+            }
+            if (!esVenta && prop.moneda_precio !== 'ARS') {
+                console.log(`❌ Moneda: Alquiler requiere ARS pero propiedad tiene ${prop.moneda_precio}`);
+                return false;
+            }
+            
             const rangos = esVenta ? 
                 [100000, 200000, 500000] : // USD
                 [100000, 200000, 500000];  // ARS
             
-            // Verificar que la moneda coincida con la operación
-            if (esVenta && prop.moneda_precio !== 'USD') {
-                console.log(`❌ Moneda no coincide: Venta requiere USD pero propiedad tiene ${prop.moneda_precio}`);
-                return false;
-            }
-            if (!esVenta && prop.moneda_precio !== 'ARS') {
-                console.log(`❌ Moneda no coincide: Alquiler requiere ARS pero propiedad tiene ${prop.moneda_precio}`);
-                return false;
-            }
-            
             let resultado;
             switch(datosUsuario.precio) {
                 case '1': 
-                    resultado = prop.precio <= rangos[0]; // Hasta 100k
+                    resultado = prop.precio <= rangos[0];
+                    console.log(`🔍 Rango 1 (Hasta ${rangos[0]}): ${prop.precio} <= ${rangos[0]} = ${resultado}`);
                     break;
                 case '2': 
-                    resultado = prop.precio > rangos[0] && prop.precio <= rangos[1]; // 100k-200k
+                    resultado = prop.precio > rangos[0] && prop.precio <= rangos[1];
+                    console.log(`🔍 Rango 2 (${rangos[0]}-${rangos[1]}): ${prop.precio} entre ${rangos[0]} y ${rangos[1]} = ${resultado}`);
                     break;
                 case '3': 
-                    resultado = prop.precio > rangos[1] && prop.precio <= rangos[2]; // 200k-500k
+                    resultado = prop.precio > rangos[1] && prop.precio <= rangos[2];
+                    console.log(`🔍 Rango 3 (${rangos[1]}-${rangos[2]}): ${prop.precio} entre ${rangos[1]} y ${rangos[2]} = ${resultado}`);
                     break;
                 case '4': 
-                    resultado = prop.precio > rangos[2]; // Más de 500k
+                    resultado = prop.precio > rangos[2];
+                    console.log(`🔍 Rango 4 (Más de ${rangos[2]}): ${prop.precio} > ${rangos[2]} = ${resultado}`);
                     break;
                 default: 
                     resultado = true;
             }
             
-            console.log(`🔍 Resultado filtro precio: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+            console.log(`💰 Resultado precio: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
             return resultado;
         }
+
+
+
+
         function procesarInteresDetectado(mensaje) {
             switch (mensaje) {
                 case '1':

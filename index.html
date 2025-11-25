@@ -441,28 +441,45 @@
             datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
             datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
             
-            // Extraer ambientes únicos - CORREGIDO
+            // Extraer ambientes únicos y ordenar correctamente
             const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb >= 0))].sort((a, b) => a - b);
             
-            datosDinamicos.ambientes = ambientesUnicos.map(amb => {
-                if (amb === 0) return {valor: 0, texto: 'No aplica'};
-                if (amb === 1) return {valor: 1, texto: 'Monoambiente'};
-                if (amb >= 4) return {valor: amb, texto: 'Más de 4 ambientes'};
-                return {valor: amb, texto: `${amb} ambientes`};
-            });
+            // Crear array de ambientes en el orden correcto
+            const opcionesAmbientes = [];
             
-            // Eliminar duplicados basados en el texto
-            const textosUnicos = [];
-            datosDinamicos.ambientes = datosDinamicos.ambientes.filter(amb => {
-                if (!textosUnicos.includes(amb.texto)) {
-                    textosUnicos.push(amb.texto);
-                    return true;
-                }
-                return false;
-            });
+            // Primero agregar Monoambiente si existe
+            if (ambientesUnicos.includes(1)) {
+                opcionesAmbientes.push({valor: 1, texto: 'Monoambiente'});
+            }
+            
+            // Luego agregar 2 ambientes si existe
+            if (ambientesUnicos.includes(2)) {
+                opcionesAmbientes.push({valor: 2, texto: '2 ambientes'});
+            }
+            
+            // Luego agregar 3 ambientes si existe
+            if (ambientesUnicos.includes(3)) {
+                opcionesAmbientes.push({valor: 3, texto: '3 ambientes'});
+            }
+            
+            // Luego agregar "Más de 3 ambientes" para 4 o más
+            const ambientesMasDe3 = ambientesUnicos.filter(amb => amb >= 4);
+            if (ambientesMasDe3.length > 0) {
+                opcionesAmbientes.push({valor: 4, texto: 'Más de 3 ambientes'});
+            }
+            
+            // Finalmente "No aplica" si existe 0
+            if (ambientesUnicos.includes(0)) {
+                opcionesAmbientes.push({valor: 0, texto: 'No aplica'});
+            }
+            
+            datosDinamicos.ambientes = opcionesAmbientes;
             
             console.log('📊 Datos extraídos:', datosDinamicos);
         }
+
+
+
 
         function mostrarMenuInicio() {
             estado = 'inicio';
@@ -666,6 +683,8 @@
             }
         }
 
+        
+        
         function mostrarMenuAmbientes() {
             estado = 'ambientes';
             
@@ -680,17 +699,6 @@
                 `;
             });
             
-            // Agregar "No aplica" si no está ya en la lista
-            const tieneNoAplica = datosDinamicos.ambientes.some(amb => amb.texto === 'No aplica');
-            if (!tieneNoAplica) {
-                const numeroNoAplica = (datosDinamicos.ambientes.length + 1).toString();
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numeroNoAplica}</span>No aplica
-                    </div>
-                `;
-            }
-            
             agregarMensajeBot(
                 `🛏️ <strong>¿Cuántos ambientes necesitás?</strong><br>
                 <em>Escribí el número correspondiente</em>`,
@@ -698,21 +706,17 @@
             );
         }
 
+
+
         function procesarAmbientes(mensaje) {
-            const maxOpciones = datosDinamicos.ambientes.length + 1;
+            const maxOpciones = datosDinamicos.ambientes.length;
             const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
             
             if (opcionesValidas.includes(mensaje)) {
                 const indice = parseInt(mensaje) - 1;
-                
-                if (indice < datosDinamicos.ambientes.length) {
-                    const ambienteObj = datosDinamicos.ambientes[indice];
-                    datosUsuario.ambientes = ambienteObj.texto;
-                    datosUsuario.ambientesNumero = ambienteObj.valor;
-                } else {
-                    datosUsuario.ambientes = 'No aplica';
-                    datosUsuario.ambientesNumero = 0;
-                }
+                const ambienteObj = datosDinamicos.ambientes[indice];
+                datosUsuario.ambientes = ambienteObj.texto;
+                datosUsuario.ambientesNumero = ambienteObj.valor;
                 
                 estado = 'barrio';
                 agregarMensajeBot(`✅ ${datosUsuario.ambientes}`);
@@ -723,6 +727,8 @@
             }
         }
      
+
+
         function mostrarMenuBarrio() {
             estado = 'barrio';
             
@@ -1217,41 +1223,24 @@
         
         
         
-        
-        
-        
-        
-        
-        
-        
-        
         function cumpleAmbientes(ambientesProp) {
             console.log(`🛏️ Comparando ambientes: Propiedad ${ambientesProp} vs Usuario "${datosUsuario.ambientes}"`);
             
-            // Limpiar el texto por si hay duplicados
-            const ambientesUsuario = datosUsuario.ambientes.replace(/\s+ambientes\s+ambientes/, ' ambientes').trim();
-            
             // Si usuario seleccionó "No aplica", coincide con propiedades que tienen 0 ambientes
-            if (ambientesUsuario === 'No aplica') {
+            if (datosUsuario.ambientes === 'No aplica') {
                 const resultado = ambientesProp === 0;
                 console.log(`🔍 "No aplica" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
-            // Si usuario seleccionó "Más de 4 ambientes"
-            else if (ambientesUsuario === 'Más de 4 ambientes') {
+            // Si usuario seleccionó "Más de 3 ambientes"
+            else if (datosUsuario.ambientes === 'Más de 3 ambientes') {
                 const resultado = ambientesProp >= 4;
-                console.log(`🔍 "Más de 4 ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                console.log(`🔍 "Más de 3 ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
-            // Si usuario seleccionó "Monoambiente"
-            else if (ambientesUsuario === 'Monoambiente') {
-                const resultado = ambientesProp === 1;
-                console.log(`🔍 "Monoambiente" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
-                return resultado;
-            }
-            // Si usuario seleccionó un número específico de ambientes (ej: "2 ambientes")
-            else if (ambientesUsuario.includes('ambientes')) {
-                const match = ambientesUsuario.match(/(\d+)\s*ambientes/);
+            // Si usuario seleccionó un número específico de ambientes
+            else if (datosUsuario.ambientes.includes('ambientes')) {
+                const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
                 if (match) {
                     const ambientesRequeridos = parseInt(match[1]);
                     const resultado = ambientesProp === ambientesRequeridos;
@@ -1259,10 +1248,19 @@
                     return resultado;
                 }
             }
+            // Si usuario seleccionó "Monoambiente"
+            else if (datosUsuario.ambientes === 'Monoambiente') {
+                const resultado = ambientesProp === 1;
+                console.log(`🔍 "Monoambiente" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
+                return resultado;
+            }
             
             console.log(`🔍 Sin criterio específico de ambientes: ✅ Coincide`);
             return true;
         }
+
+
+
 
         function cumpleRangoPrecio(prop) {
             console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs "${obtenerTextoPrecio()}"`);

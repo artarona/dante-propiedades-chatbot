@@ -443,15 +443,23 @@
             
             // Extraer ambientes únicos - CORREGIDO
             const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb >= 0))].sort((a, b) => a - b);
+            
             datosDinamicos.ambientes = ambientesUnicos.map(amb => {
-                if (amb === 0) return 'No aplica';
-                if (amb === 1) return 'Monoambiente';
-                if (amb >= 4) return 'Más de 4 ambientes';
-                return `${amb} ambientes`;
+                if (amb === 0) return {valor: 0, texto: 'No aplica'};
+                if (amb === 1) return {valor: 1, texto: 'Monoambiente'};
+                if (amb >= 4) return {valor: amb, texto: 'Más de 4 ambientes'};
+                return {valor: amb, texto: `${amb} ambientes`};
             });
             
-            // Eliminar duplicados
-            datosDinamicos.ambientes = [...new Set(datosDinamicos.ambientes)];
+            // Eliminar duplicados basados en el texto
+            const textosUnicos = [];
+            datosDinamicos.ambientes = datosDinamicos.ambientes.filter(amb => {
+                if (!textosUnicos.includes(amb.texto)) {
+                    textosUnicos.push(amb.texto);
+                    return true;
+                }
+                return false;
+            });
             
             console.log('📊 Datos extraídos:', datosDinamicos);
         }
@@ -663,39 +671,32 @@
             
             let opcionesHTML = '';
             
-            datosDinamicos.ambientes.forEach((ambiente, index) => {
+            datosDinamicos.ambientes.forEach((ambienteObj, index) => {
                 const numero = (index + 1).toString();
-                let textoAmbiente = '';
-                
-                if (ambiente === 'más de 4') {
-                    textoAmbiente = 'Más de 4 ambientes';
-                } else if (ambiente === 1) {
-                    textoAmbiente = 'Monoambiente';
-                } else {
-                    textoAmbiente = `${ambiente} ambientes`;
-                }
-                
                 opcionesHTML += `
                     <div class="menu-item">
-                        <span class="menu-number">${numero}</span>${textoAmbiente}
+                        <span class="menu-number">${numero}</span>${ambienteObj.texto}
                     </div>
                 `;
             });
             
-            const numeroNoAplica = (datosDinamicos.ambientes.length + 1).toString();
-            opcionesHTML += `
-                <div class="menu-item">
-                    <span class="menu-number">${numeroNoAplica}</span>No aplica
-                </div>
-            `;
+            // Agregar "No aplica" si no está ya en la lista
+            const tieneNoAplica = datosDinamicos.ambientes.some(amb => amb.texto === 'No aplica');
+            if (!tieneNoAplica) {
+                const numeroNoAplica = (datosDinamicos.ambientes.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numeroNoAplica}</span>No aplica
+                    </div>
+                `;
+            }
             
             agregarMensajeBot(
                 `🛏️ <strong>¿Cuántos ambientes necesitás?</strong><br>
                 <em>Escribí el número correspondiente</em>`,
                 opcionesHTML
             );
-        } 
-
+        }
 
         function procesarAmbientes(mensaje) {
             const maxOpciones = datosDinamicos.ambientes.length + 1;
@@ -705,17 +706,9 @@
                 const indice = parseInt(mensaje) - 1;
                 
                 if (indice < datosDinamicos.ambientes.length) {
-                    const ambiente = datosDinamicos.ambientes[indice];
-                    if (ambiente === 'más de 4') {
-                        datosUsuario.ambientes = 'Más de 4 ambientes';
-                        datosUsuario.ambientesNumero = 5; // Para filtrado
-                    } else if (ambiente === 1) {
-                        datosUsuario.ambientes = 'Monoambiente';
-                        datosUsuario.ambientesNumero = 1;
-                    } else {
-                        datosUsuario.ambientes = `${ambiente} ambientes`;
-                        datosUsuario.ambientesNumero = ambiente;
-                    }
+                    const ambienteObj = datosDinamicos.ambientes[indice];
+                    datosUsuario.ambientes = ambienteObj.texto;
+                    datosUsuario.ambientesNumero = ambienteObj.valor;
                 } else {
                     datosUsuario.ambientes = 'No aplica';
                     datosUsuario.ambientesNumero = 0;
@@ -729,8 +722,6 @@
                 mostrarMenuAmbientes();
             }
         }
-
-     
      
         function mostrarMenuBarrio() {
             estado = 'barrio';

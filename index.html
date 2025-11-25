@@ -1469,6 +1469,8 @@
         // ... (todo el código anterior permanece igual) ...
 
         // Función para verificar imágenes - Agregar al final
+        // ... (tu código existente) ...
+
         function verificarTodasLasImagenes() {
             console.log('🔍 Verificando todas las imágenes en la página...');
             const todasLasImagenes = document.querySelectorAll('.property-image');
@@ -1482,7 +1484,7 @@
                     complete: img.complete
                 });
             });
-        }
+        } // <-- FALTABA ESTA LLAVE
 
         // Ejecutar después de mostrar propiedades
         function mostrarPropiedadesDestacadasConVerificacion() {
@@ -1543,7 +1545,7 @@
                 <em>Escribí el número de tu opción</em>`,
                 opciones
             );
-        }
+        } // <-- FALTABA ESTA LLAVE
 
         // Función auxiliar para manejo de imágenes global
         function inicializarManejadorImagenes() {
@@ -1579,7 +1581,7 @@
                     });
                 }
             });
-        }
+        } // <-- FALTABA ESTA LLAVE
 
         // Inicializar manejador de imágenes cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
@@ -1587,7 +1589,7 @@
             
             // También inicializar el input
             document.getElementById('userInput').focus();
-        });
+        }); // <-- FALTABA ESTA LLAVE
 
         // Función para limpiar caché de imágenes (útil para desarrollo)
         function limpiarCacheImagenes() {
@@ -1598,16 +1600,14 @@
                 img.src = originalSrc + '?t=' + Date.now();
             });
             console.log('🔄 Cache de imágenes limpiado');
-        }
+        } // <-- FALTABA ESTA LLAVE
 
         // Exportar funciones globales si es necesario
         window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadasConVerificacion;
         window.verificarTodasLasImagenes = verificarTodasLasImagenes;
         window.limpiarCacheImagenes = limpiarCacheImagenes;
 
-        
-    
-    
     </script>
+
 </body>
 </html>

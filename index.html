@@ -1152,7 +1152,7 @@
             const propiedadesCoincidentes = propiedades.filter(prop => {
                 console.log(`\n🔍 Analizando: ${prop.id_temporal} - "${prop.titulo}"`);
                 
-                // 1. OPERACIÓN - Coincidencia exacta
+                // 1. OPERACIÓN - Coincidencia exacta (CRÍTICO)
                 if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
                     console.log(`❌ Operación: ${prop.operacion} ≠ ${datosUsuario.operacion}`);
                     return false;
@@ -1180,12 +1180,12 @@
                 }
                 console.log(`✅ Ambientes: ${prop.ambientes} cumple criterio`);
                 
-                // 5. PRECIO - Usar función corregida
-                if (datosUsuario.precio && !cumpleRangoPrecio(prop)) {
+                // 5. PRECIO - Función más flexible
+                if (datosUsuario.precio && datosUsuario.precio !== '5' && !cumpleRangoPrecio(prop)) {
                     console.log(`❌ Precio: ${prop.precio} ${prop.moneda_precio} no cumple rango`);
                     return false;
                 }
-                console.log(`✅ Precio: ${prop.precio} ${prop.moneda_precio} cumple rango`);
+                console.log(`✅ Precio: ${prop.precio} ${prop.moneda_precio} cumple criterio`);
                 
                 console.log(`🎉 ${prop.id_temporal}: ¡COINCIDE COMPLETAMENTE!`);
                 return true;
@@ -1194,7 +1194,6 @@
             console.log('📊 RESULTADO FINAL:', propiedadesCoincidentes.map(p => p.id_temporal));
             return propiedadesCoincidentes;
         }
-
         
         function inicializarVerificacionImagenes() {
             // Verificar imágenes después de que se muestren las propiedades
@@ -1289,37 +1288,47 @@
             
             const esVenta = datosUsuario.operacion === 'venta';
             
-            // VERIFICACIÓN CRÍTICA: Asegurar que la moneda coincida con la operación
-            if (esVenta && prop.moneda_precio !== 'USD') {
-                console.log(`❌ Moneda: Venta requiere USD pero propiedad tiene ${prop.moneda_precio}`);
-                return false;
-            }
-            if (!esVenta && prop.moneda_precio !== 'ARS') {
-                console.log(`❌ Moneda: Alquiler requiere ARS pero propiedad tiene ${prop.moneda_precio}`);
-                return false;
+            // VERIFICACIÓN CRÍTICA CORREGIDA: Solo verificar moneda si hay discrepancia
+            // No filtrar por moneda si el usuario seleccionó "Consultar precio" o si no especificó precio
+            if (esVenta) {
+                // Para venta, preferir USD pero no descartar ARS completamente
+                if (prop.moneda_precio !== 'USD') {
+                    console.log(`⚠️  Propiedad en ${prop.moneda_precio} para venta - verificando igual`);
+                    // No return false, solo log warning
+                }
+            } else {
+                // Para alquiler, preferir ARS pero no descartar USD completamente  
+                if (prop.moneda_precio !== 'ARS') {
+                    console.log(`⚠️  Propiedad en ${prop.moneda_precio} para alquiler - verificando igual`);
+                    // No return false, solo log warning
+                }
             }
             
-            const rangos = esVenta ? 
-                [100000, 200000, 500000] : // USD
-                [100000, 200000, 500000];  // ARS
+            // Usar los rangos correctos según la moneda de la propiedad
+            let rangos;
+            if (prop.moneda_precio === 'USD') {
+                rangos = [100000, 200000, 500000]; // USD
+            } else {
+                rangos = [100000, 200000, 500000]; // ARS (mismos valores)
+            }
             
             let resultado;
             switch(datosUsuario.precio) {
                 case '1': 
                     resultado = prop.precio <= rangos[0];
-                    console.log(`🔍 Rango 1 (Hasta ${rangos[0]}): ${prop.precio} <= ${rangos[0]} = ${resultado}`);
+                    console.log(`🔍 Rango 1 (Hasta ${rangos[0]} ${prop.moneda_precio}): ${prop.precio} <= ${rangos[0]} = ${resultado}`);
                     break;
                 case '2': 
                     resultado = prop.precio > rangos[0] && prop.precio <= rangos[1];
-                    console.log(`🔍 Rango 2 (${rangos[0]}-${rangos[1]}): ${prop.precio} entre ${rangos[0]} y ${rangos[1]} = ${resultado}`);
+                    console.log(`🔍 Rango 2 (${rangos[0]}-${rangos[1]} ${prop.moneda_precio}): ${prop.precio} entre ${rangos[0]} y ${rangos[1]} = ${resultado}`);
                     break;
                 case '3': 
                     resultado = prop.precio > rangos[1] && prop.precio <= rangos[2];
-                    console.log(`🔍 Rango 3 (${rangos[1]}-${rangos[2]}): ${prop.precio} entre ${rangos[1]} y ${rangos[2]} = ${resultado}`);
+                    console.log(`🔍 Rango 3 (${rangos[1]}-${rangos[2]} ${prop.moneda_precio}): ${prop.precio} entre ${rangos[1]} y ${rangos[2]} = ${resultado}`);
                     break;
                 case '4': 
                     resultado = prop.precio > rangos[2];
-                    console.log(`🔍 Rango 4 (Más de ${rangos[2]}): ${prop.precio} > ${rangos[2]} = ${resultado}`);
+                    console.log(`🔍 Rango 4 (Más de ${rangos[2]} ${prop.moneda_precio}): ${prop.precio} > ${rangos[2]} = ${resultado}`);
                     break;
                 default: 
                     resultado = true;

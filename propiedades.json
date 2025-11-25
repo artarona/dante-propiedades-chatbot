@@ -61,7 +61,7 @@
     "metros_cuadrados": 306,
     "operacion": "venta",
     "tipo": "terreno",
-    "descripcion": "Amplia casa familiar con múltiples ambientes, patio parrillero y cochera. Excelente estado de conservación en zona residencial.",
+    "descripcion": "Amplia casa familiar con múltiples ambientes, patio parrillero y cochera",
     "direccion": "Avda. La Plata 1300",
     "antiguedad": 15,
     "estado": "bueno",
@@ -119,7 +119,7 @@
     "pileta": "No",
     "acepta_mascotas": "Sí",
     "aire_acondicionado": "Sí",
-    "info_multimedia": "Fotos profesionales disponibles, Tour virtual 360°",
+    "info_multimedia": "Fotos profesionales disponibles",
     "documentos": [
     ],
      "videos": [

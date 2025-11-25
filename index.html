@@ -997,11 +997,15 @@
         
         
         function crearTarjetaPropiedadDetallada(prop, numero) {
-    console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
-    
-    // ... (todo el código anterior igual hasta el return) ...
-    
-    return `
+            console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
+            
+            // ... (todo el código anterior igual hasta el return) ...
+            
+            return;
+        
+        }
+        
+        
         <div class="property-highlight">
             <div class="property-header">
                 <h3>${numero}. ${prop.titulo}</h3>
@@ -1056,8 +1060,8 @@
                 </div>
             </div>
         </div>
-    `;
-}
+   
+
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
             console.log('📋 PROPIEDADES DISPONIBLES:', propiedades.map(p => ({

@@ -694,7 +694,7 @@
                 <em>Escribí el número correspondiente</em>`,
                 opcionesHTML
             );
-        } // <-- ESTA LLAVE DE CIERRE FALTABA
+        } // <-- 
 
 
         function procesarAmbientes(mensaje) {
@@ -1167,8 +1167,7 @@
                     }, 100);
                 </script>
             `;
-        } // <-- THIS CLOSING BRACE WAS MISSING
-
+        } // <-- 
         
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
@@ -1228,7 +1227,7 @@
             return propiedadesCoincidentes;
         }
 
-       function cumpleAmbientes(ambientesProp) {
+        function cumpleAmbientes(ambientesProp) {
             console.log(`🛏️ Comparando ambientes: Propiedad ${ambientesProp} vs Usuario "${datosUsuario.ambientes}"`);
             
             // Limpiar el texto por si hay duplicados
@@ -1484,7 +1483,7 @@
                     complete: img.complete
                 });
             });
-        } // <-- FALTABA ESTA LLAVE
+        } 
 
         // Ejecutar después de mostrar propiedades
         function mostrarPropiedadesDestacadasConVerificacion() {
@@ -1545,7 +1544,7 @@
                 <em>Escribí el número de tu opción</em>`,
                 opciones
             );
-        } // <-- FALTABA ESTA LLAVE
+        } 
 
         // Función auxiliar para manejo de imágenes global
         function inicializarManejadorImagenes() {
@@ -1581,7 +1580,7 @@
                     });
                 }
             });
-        } // <-- FALTABA ESTA LLAVE
+        } 
 
         // Inicializar manejador de imágenes cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
@@ -1589,7 +1588,7 @@
             
             // También inicializar el input
             document.getElementById('userInput').focus();
-        }); // <-- FALTABA ESTA LLAVE
+        });
 
         // Función para limpiar caché de imágenes (útil para desarrollo)
         function limpiarCacheImagenes() {
@@ -1600,8 +1599,7 @@
                 img.src = originalSrc + '?t=' + Date.now();
             });
             console.log('🔄 Cache de imágenes limpiado');
-        } // <-- FALTABA ESTA LLAVE
-
+        } 
         // Exportar funciones globales si es necesario
         window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadasConVerificacion;
         window.verificarTodasLasImagenes = verificarTodasLasImagenes;

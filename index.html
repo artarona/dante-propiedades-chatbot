@@ -381,8 +381,7 @@
     
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
-            <!-- Los mensajes se cargan dinámicamente -->
-        </div>
+            </div>
         
         <div class="input-container">
             <input type="text" id="userInput" placeholder="Escribe el número de tu opción..." autocomplete="off">
@@ -665,15 +664,7 @@
             
             datosDinamicos.ambientes.forEach((ambiente, index) => {
                 const numero = (index + 1).toString();
-                let textoAmbiente = '';
-                
-                if (ambiente === 'más de 4') {
-                    textoAmbiente = 'Más de 4 ambientes';
-                } else if (ambiente === 1) {
-                    textoAmbiente = 'Monoambiente';
-                } else {
-                    textoAmbiente = `${ambiente} ambientes`;
-                }
+                let textoAmbiente = ambiente;
                 
                 opcionesHTML += `
                     <div class="menu-item">
@@ -706,20 +697,23 @@
                 
                 if (indice < datosDinamicos.ambientes.length) {
                     const ambiente = datosDinamicos.ambientes[indice];
-                    if (ambiente === 'más de 4') {
-                        datosUsuario.ambientes = 'Más de 4 ambientes';
-                        datosUsuario.ambientesNumero = 5; // Para filtrado
-                    } else if (ambiente === 1) {
-                        datosUsuario.ambientes = 'Monoambiente';
-                        datosUsuario.ambientesNumero = 1;
-                    } else {
-                        datosUsuario.ambientes = `${ambiente} ambientes`;
-                        datosUsuario.ambientesNumero = ambiente;
-                    }
+                    datosUsuario.ambientes = ambiente;
                 } else {
                     datosUsuario.ambientes = 'No aplica';
+                }
+                
+                // Setear ambientesNumero para filtrado
+                if (datosUsuario.ambientes === 'Monoambiente') {
+                    datosUsuario.ambientesNumero = 1;
+                } else if (datosUsuario.ambientes.includes('Más de 4')) {
+                    datosUsuario.ambientesNumero = 5; // o cualquier número >= 4 para el filtro
+                } else if (datosUsuario.ambientes.includes('ambientes')) {
+                    const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
+                    datosUsuario.ambientesNumero = match ? parseInt(match[1]) : 0;
+                } else {
                     datosUsuario.ambientesNumero = 0;
                 }
+
                 
                 estado = 'barrio';
                 agregarMensajeBot(`✅ ${datosUsuario.ambientes}`);
@@ -1200,8 +1194,12 @@
                 
                 // 3. BARRIO - Coincidencia exacta
                 if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
-                    console.log(`❌ Barrio: ${prop.barrio} ≠ ${datosUsuario.barrio}`);
-                    return false;
+                    // Solo si el barrio seleccionado por el usuario está entre los barrios predefinidos se exige la coincidencia exacta
+                    // Si el usuario escribió un barrio (estado 'barrio_texto'), no filtramos por barrio aquí, ya que el barrio podría no estar en la lista dinámica.
+                    if (datosDinamicos.barrios.includes(datosUsuario.barrio)) {
+                        console.log(`❌ Barrio: ${prop.barrio} ≠ ${datosUsuario.barrio}`);
+                        return false;
+                    }
                 }
                 console.log(`✅ Barrio: ${prop.barrio} = ${datosUsuario.barrio}`);
                 
@@ -1230,30 +1228,27 @@
         function cumpleAmbientes(ambientesProp) {
             console.log(`🛏️ Comparando ambientes: Propiedad ${ambientesProp} vs Usuario "${datosUsuario.ambientes}"`);
             
-            // Limpiar el texto por si hay duplicados
-            const ambientesUsuario = datosUsuario.ambientes.replace(/\s+ambientes\s+ambientes/, ' ambientes').trim();
-            
             // Si usuario seleccionó "No aplica", coincide con propiedades que tienen 0 ambientes
-            if (ambientesUsuario === 'No aplica') {
+            if (datosUsuario.ambientes === 'No aplica') {
                 const resultado = ambientesProp === 0;
                 console.log(`🔍 "No aplica" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó "Más de 4 ambientes"
-            else if (ambientesUsuario === 'Más de 4 ambientes') {
+            else if (datosUsuario.ambientes === 'Más de 4 ambientes') {
                 const resultado = ambientesProp >= 4;
                 console.log(`🔍 "Más de 4 ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó "Monoambiente"
-            else if (ambientesUsuario === 'Monoambiente') {
+            else if (datosUsuario.ambientes === 'Monoambiente') {
                 const resultado = ambientesProp === 1;
                 console.log(`🔍 "Monoambiente" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó un número específico de ambientes (ej: "2 ambientes")
-            else if (ambientesUsuario.includes('ambientes')) {
-                const match = ambientesUsuario.match(/(\d+)\s*ambientes/);
+            else if (datosUsuario.ambientes.includes('ambientes')) {
+                const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
                 if (match) {
                     const ambientesRequeridos = parseInt(match[1]);
                     const resultado = ambientesProp === ambientesRequeridos;
@@ -1267,7 +1262,7 @@
         }
 
         function cumpleRangoPrecio(prop) {
-            console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs "${obtenerTextoPrecio()}"`);
+            console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs rango "${obtenerTextoPrecio()}"`);
             
             // Si la propiedad no tiene precio, solo coincide con "Consultar precio"
             if (!prop.precio || prop.precio === 0) {
@@ -1327,7 +1322,8 @@
         function procesarInteresDetectado(mensaje) {
             switch (mensaje) {
                 case '1':
-                    mostrarDetallesCompletos();
+                    // Usamos la función original, pero que tiene la verificación dentro.
+                    mostrarPropiedadesDestacadas(); 
                     break;
                 case '2':
                     agendarVisita();
@@ -1465,11 +1461,6 @@
         }
 
         // Función para verificar imágenes - Agregar al final
-        // ... (todo el código anterior permanece igual) ...
-
-        // Función para verificar imágenes - Agregar al final
-        // ... (tu código existente) ...
-
         function verificarTodasLasImagenes() {
             console.log('🔍 Verificando todas las imágenes en la página...');
             const todasLasImagenes = document.querySelectorAll('.property-image');
@@ -1483,67 +1474,6 @@
                     complete: img.complete
                 });
             });
-        } 
-
-        // Ejecutar después de mostrar propiedades
-        function mostrarPropiedadesDestacadasConVerificacion() {
-            propiedadesFiltradas = filtrarPropiedadesConPrecision();
-            datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
-            
-            console.log('🔍 Propiedades filtradas:', propiedadesFiltradas);
-            console.log('📊 Criterios de búsqueda:', datosUsuario);
-            
-            if (propiedadesFiltradas.length === 0) {
-                agregarMensajeBot('🔍 No encontré propiedades exactas con tus criterios. Un asesor te contactará para ayudarte.');
-                estado = 'contacto';
-                solicitarContacto();
-                return;
-            }
-            
-            const mensajeInteres = `
-                <div class="interest-detected">
-                    <h3>🎉 ¡Encontramos opciones para vos!</h3>
-                    <p>Tenemos <strong>${propiedadesFiltradas.length} propiedades</strong> que coinciden exactamente con tu búsqueda.</p>
-                </div>
-            `;
-            
-            agregarMensajeBot(mensajeInteres);
-            
-            let propiedadesHTML = `<div class="properties-grid">`;
-            
-            propiedadesFiltradas.forEach((prop, index) => {
-                propiedadesHTML += crearTarjetaPropiedadDetallada(prop, index + 1);
-            });
-            
-            propiedadesHTML += `</div>`;
-            
-            agregarMensajeBot(propiedadesHTML);
-            
-            // Verificar imágenes después de mostrarlas
-            setTimeout(() => {
-                verificarTodasLasImagenes();
-            }, 2000);
-            
-            const opciones = `
-                <div class="menu-item">
-                    <span class="menu-number">1</span>Ver más detalles de las propiedades
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">2</span>Agendar visita
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">3</span>Hablar con asesor
-                </div>
-                <div class="menu-item">
-                    <span class="menu-number">4</span>Volver al inicio
-                </div>
-            `;
-            
-            agregarMensajeBot(
-                `<strong>¿Qué querés hacer?</strong><br>
-                <em>Escribí el número de tu opción</em>`,
-                opciones
-            );
         } 
 
         // Función auxiliar para manejo de imágenes global
@@ -1601,11 +1531,11 @@
             console.log('🔄 Cache de imágenes limpiado');
         } 
         // Exportar funciones globales si es necesario
-        window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadasConVerificacion;
+        window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadas; // Usamos la función principal
         window.verificarTodasLasImagenes = verificarTodasLasImagenes;
         window.limpiarCacheImagenes = limpiarCacheImagenes;
 
     </script>
 
 </body>
-</html
+</html>

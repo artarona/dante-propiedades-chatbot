@@ -381,7 +381,8 @@
     
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages">
-            </div>
+            <!-- Los mensajes se cargan dinámicamente -->
+        </div>
         
         <div class="input-container">
             <input type="text" id="userInput" placeholder="Escribe el número de tu opción..." autocomplete="off">
@@ -664,7 +665,15 @@
             
             datosDinamicos.ambientes.forEach((ambiente, index) => {
                 const numero = (index + 1).toString();
-                let textoAmbiente = ambiente;
+                let textoAmbiente = '';
+                
+                if (ambiente === 'más de 4') {
+                    textoAmbiente = 'Más de 4 ambientes';
+                } else if (ambiente === 1) {
+                    textoAmbiente = 'Monoambiente';
+                } else {
+                    textoAmbiente = `${ambiente} ambientes`;
+                }
                 
                 opcionesHTML += `
                     <div class="menu-item">
@@ -697,23 +706,20 @@
                 
                 if (indice < datosDinamicos.ambientes.length) {
                     const ambiente = datosDinamicos.ambientes[indice];
-                    datosUsuario.ambientes = ambiente;
+                    if (ambiente === 'más de 4') {
+                        datosUsuario.ambientes = 'Más de 4 ambientes';
+                        datosUsuario.ambientesNumero = 5; // Para filtrado
+                    } else if (ambiente === 1) {
+                        datosUsuario.ambientes = 'Monoambiente';
+                        datosUsuario.ambientesNumero = 1;
+                    } else {
+                        datosUsuario.ambientes = `${ambiente} ambientes`;
+                        datosUsuario.ambientesNumero = ambiente;
+                    }
                 } else {
                     datosUsuario.ambientes = 'No aplica';
-                }
-                
-                // Setear ambientesNumero para filtrado
-                if (datosUsuario.ambientes === 'Monoambiente') {
-                    datosUsuario.ambientesNumero = 1;
-                } else if (datosUsuario.ambientes.includes('Más de 4')) {
-                    datosUsuario.ambientesNumero = 5; // o cualquier número >= 4 para el filtro
-                } else if (datosUsuario.ambientes.includes('ambientes')) {
-                    const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
-                    datosUsuario.ambientesNumero = match ? parseInt(match[1]) : 0;
-                } else {
                     datosUsuario.ambientesNumero = 0;
                 }
-
                 
                 estado = 'barrio';
                 agregarMensajeBot(`✅ ${datosUsuario.ambientes}`);
@@ -952,6 +958,8 @@
             `;
             
             agregarMensajeBot(mensajeInteres);
+            // Inicializar verificación de imágenes
+            inicializarVerificacionImagenes();
             
             let propiedadesHTML = `<div class="properties-grid">`;
             
@@ -989,180 +997,67 @@
         
         
         function crearTarjetaPropiedadDetallada(prop, numero) {
-            console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
-            
-            // Generar características
-            const caracteristicas = [];
-            
-            // Características principales - CORREGIDAS
-            if (prop.cochera && (prop.cochera === 'Si' || prop.cochera === 'Sí' || prop.cochera === 'si' || prop.cochera === 'sí')) {
-                caracteristicas.push({text: 'Cochera', type: 'yes'});
-            } else {
-                caracteristicas.push({text: 'Cochera', type: 'no'});
-            }
-            
-            if (prop.pileta && (prop.pileta === 'Si' || prop.pileta === 'Sí' || prop.pileta === 'si' || prop.pileta === 'sí')) {
-                caracteristicas.push({text: 'Pileta', type: 'yes'});
-            } else {
-                caracteristicas.push({text: 'Pileta', type: 'no'});
-            }
-            
-            if (prop.balcon && (prop.balcon === 'Si' || prop.balcon === 'Sí' || prop.balcon === 'si' || prop.balcon === 'sí' || prop.balcon === 'x')) {
-                caracteristicas.push({text: 'Balcón', type: 'yes'});
-            } else {
-                caracteristicas.push({text: 'Balcón', type: 'no'});
-            }
-            
-            if (prop.acepta_mascotas && (prop.acepta_mascotas === 'Si' || prop.acepta_mascotas === 'Sí' || prop.acepta_mascotas === 'si' || prop.acepta_mascotas === 'sí')) {
-                caracteristicas.push({text: 'Mascotas', type: 'yes'});
-            } else {
-                caracteristicas.push({text: 'Mascotas', type: 'no'});
-            }
-            
-            if (prop.aire_acondicionado && (prop.aire_acondicionado === 'Si' || prop.aire_acondicionado === 'Sí' || prop.aire_acondicionado === 'si' || prop.aire_acondicionado === 'sí')) {
-                caracteristicas.push({text: 'Aire A/C', type: 'yes'});
-            } else {
-                caracteristicas.push({text: 'Aire A/C', type: 'no'});
-            }
-            
-            // Generar HTML de características
-            const featuresHTML = `
-                <div class="property-features">
-                    ${caracteristicas.map(feat => 
-                        `<span class="feature-badge feature-badge-${feat.type}">${feat.text}: ${feat.type === 'yes' ? '✅' : '❌'}</span>`
-                    ).join('')}
-                </div>`;
-            
-            // Generar HTML de imágenes - CORREGIDO
-            let imagenesHTML = '';
-            if (prop.fotos && prop.fotos.length > 0) {
-                console.log(`📸 Generando ${prop.fotos.length} imágenes para ${prop.id_temporal}`);
-                imagenesHTML = prop.fotos.map((foto, index) => {
-                    // Asegurar que la ruta de la imagen sea correcta
-                    const rutaImagen = foto.startsWith('http') ? foto : 
-                                    foto.startsWith('/') ? foto.substring(1) : 
-                                    foto;
-                    
-                    return `<img src="${rutaImagen}" 
-                                alt="Imagen ${index + 1} de ${prop.titulo}" 
-                                class="property-image" 
-                                loading="lazy"
-                                onerror="console.error('❌ Error cargando imagen:', this.src); this.style.display='none'">`;
-                }).join('');
+    console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
+    
+    // ... (todo el código anterior igual hasta el return) ...
+    
+    return `
+        <div class="property-highlight">
+            <div class="property-header">
+                <h3>${numero}. ${prop.titulo}</h3>
+                <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)} • ID: ${prop.id_temporal}</span>
+            </div>
+            <div class="property-content">
+                <div class="property-price">
+                    ${formatearPrecio(prop)}
+                </div>
                 
-                console.log(`✅ HTML de imágenes generado para ${prop.id_temporal}`);
-            } else {
-                imagenesHTML = '<div style="text-align: center; padding: 1rem; color: #666; background: #f8f9fa; border-radius: 5px;">📷 No hay fotos disponibles para esta propiedad</div>';
-                console.log(`❌ No hay fotos para ${prop.id_temporal}`);
-            }
-            
-            // Información adicional específica
-            const infoAdicional = [
-                prop.direccion ? `📍 <strong>Dirección:</strong> ${prop.direccion}` : '',
-                prop.orientacion ? `🧭 <strong>Orientación:</strong> ${prop.orientacion}` : '',
-                prop.expensas ? `💰 <strong>Expensas:</strong> $${prop.expensas.toLocaleString()} ${prop.moneda_expensas}` : '',
-                prop.amenities && prop.amenities !== 'No' ? `🏊 <strong>Amenities:</strong> ${prop.amenities}` : ''
-            ].filter(info => info !== '').join('<br>');
-            
-            return `
-                <div class="property-highlight">
-                    <div class="property-header">
-                        <h3>${numero}. ${prop.titulo}</h3>
-                        <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)} • ID: ${prop.id_temporal}</span>
+                <div class="property-details">
+                    <div class="detail-item">🏠 ${prop.tipo.charAt(0).toUpperCase() + prop.tipo.slice(1)}</div>
+                    <div class="detail-item">📍 ${prop.barrio}</div>
+                    <div class="detail-item">🛏️ ${prop.ambientes} amb.</div>
+                    <div class="detail-item">📏 ${prop.metros_cuadrados}m²</div>
+                    <div class="detail-item">🏢 ${prop.antiguedad || 'N/A'} años</div>
+                    <div class="detail-item">⭐ ${prop.estado || 'N/A'}</div>
+                </div>
+                
+                ${prop.descripcion ? `
+                    <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--whatsapp-green);">
+                        <strong>📝 Descripción:</strong><br>
+                        ${prop.descripcion}
                     </div>
-                    <div class="property-content">
-                        <div class="property-price">
-                            ${formatearPrecio(prop)}
-                        </div>
-                        
-                        <div class="property-details">
-                            <div class="detail-item">🏠 ${prop.tipo.charAt(0).toUpperCase() + prop.tipo.slice(1)}</div>
-                            <div class="detail-item">📍 ${prop.barrio}</div>
-                            <div class="detail-item">🛏️ ${prop.ambientes} amb.</div>
-                            <div class="detail-item">📏 ${prop.metros_cuadrados}m²</div>
-                            <div class="detail-item">🏢 ${prop.antiguedad || 'N/A'} años</div>
-                            <div class="detail-item">⭐ ${prop.estado || 'N/A'}</div>
-                        </div>
-                        
-                        ${prop.descripcion ? `
-                            <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--whatsapp-green);">
-                                <strong>📝 Descripción:</strong><br>
-                                ${prop.descripcion}
-                            </div>
-                        ` : ''}
-                        
-                        ${infoAdicional ? `
-                            <div style="margin: 1rem 0; font-size: 0.9rem; padding: 0.8rem; background: #f0f8ff; border-radius: 5px;">
-                                ${infoAdicional}
-                            </div>
-                        ` : ''}
-                        
-                        ${featuresHTML}
-                        
-                        <div style="margin: 1rem 0;">
-                            <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
-                            <div class="property-images" id="images-${prop.id_temporal}">
-                                ${imagenesHTML}
-                            </div>
-                            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
-                                ${prop.fotos && prop.fotos.length > 0 ? 
-                                    `Haz clic en las imágenes para ampliar` : 
-                                    `Contacta al asesor para ver las fotos disponibles`
-                                }
-                            </div>
-                        </div>
-                        
-                        <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666; padding: 0.8rem; background: #f8f9fa; border-radius: 5px;">
-                            <strong>ID:</strong> ${prop.id_temporal} | 
-                            <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
-                            <strong>Fotos cargadas:</strong> ${prop.fotos ? prop.fotos.length : 0}
-                        </div>
+                ` : ''}
+                
+                ${infoAdicional ? `
+                    <div style="margin: 1rem 0; font-size: 0.9rem; padding: 0.8rem; background: #f0f8ff; border-radius: 5px;">
+                        ${infoAdicional}
+                    </div>
+                ` : ''}
+                
+                ${featuresHTML}
+                
+                <div style="margin: 1rem 0;">
+                    <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
+                    <div class="property-images" id="images-${prop.id_temporal}">
+                        ${imagenesHTML}
+                    </div>
+                    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
+                        ${prop.fotos && prop.fotos.length > 0 ? 
+                            `Haz clic en las imágenes para ampliar` : 
+                            `Contacta al asesor para ver las fotos disponibles`
+                        }
                     </div>
                 </div>
                 
-                <script>
-                    // Script para manejar errores de imágenes
-                    setTimeout(() => {
-                        const imageContainer = document.getElementById('images-${prop.id_temporal}');
-                        if (imageContainer) {
-                            const images = imageContainer.getElementsByTagName('img');
-                            console.log('🖼️ Verificando ${prop.fotos ? prop.fotos.length : 0} imágenes para ${prop.id_temporal}');
-                            
-                            let loadedImages = 0;
-                            let errorImages = 0;
-                            
-                            for (let img of images) {
-                                img.onload = function() {
-                                    loadedImages++;
-                                    console.log('✅ Imagen cargada:', img.src);
-                                };
-                                img.onerror = function() {
-                                    errorImages++;
-                                    console.log('❌ Error cargando imagen:', img.src);
-                                    img.style.display = 'none';
-                                };
-                            }
-                            
-                            // Verificar después de 2 segundos
-                            setTimeout(() => {
-                                console.log('📊 Resumen imágenes ${prop.id_temporal}:', {
-                                    total: images.length,
-                                    cargadas: loadedImages,
-                                    errores: errorImages
-                                });
-                                
-                                if (errorImages > 0 && loadedImages === 0) {
-                                    const errorMsg = document.createElement('div');
-                                    errorMsg.innerHTML = '<div style="text-align: center; padding: 1rem; color: #d35400; background: #fff3cd; border-radius: 5px; margin-top: 0.5rem;">⚠️ No se pudieron cargar las imágenes. Verifica la conexión o contacta al asesor.</div>';
-                                    imageContainer.appendChild(errorMsg);
-                                }
-                            }, 2000);
-                        }
-                    }, 100);
-                </script>
-            `;
-        } 
-        
+                <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666; padding: 0.8rem; background: #f8f9fa; border-radius: 5px;">
+                    <strong>ID:</strong> ${prop.id_temporal} | 
+                    <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
+                    <strong>Fotos cargadas:</strong> ${prop.fotos ? prop.fotos.length : 0}
+                </div>
+            </div>
+        </div>
+    `;
+}
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
             console.log('📋 PROPIEDADES DISPONIBLES:', propiedades.map(p => ({
@@ -1194,12 +1089,8 @@
                 
                 // 3. BARRIO - Coincidencia exacta
                 if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
-                    // Solo si el barrio seleccionado por el usuario está entre los barrios predefinidos se exige la coincidencia exacta
-                    // Si el usuario escribió un barrio (estado 'barrio_texto'), no filtramos por barrio aquí, ya que el barrio podría no estar en la lista dinámica.
-                    if (datosDinamicos.barrios.includes(datosUsuario.barrio)) {
-                        console.log(`❌ Barrio: ${prop.barrio} ≠ ${datosUsuario.barrio}`);
-                        return false;
-                    }
+                    console.log(`❌ Barrio: ${prop.barrio} ≠ ${datosUsuario.barrio}`);
+                    return false;
                 }
                 console.log(`✅ Barrio: ${prop.barrio} = ${datosUsuario.barrio}`);
                 
@@ -1225,30 +1116,73 @@
             return propiedadesCoincidentes;
         }
 
+        
+        function inicializarVerificacionImagenes() {
+            // Verificar imágenes después de que se muestren las propiedades
+            setTimeout(() => {
+                const todasLasImagenes = document.querySelectorAll('.property-image');
+                console.log(`🔍 Verificando ${todasLasImagenes.length} imágenes...`);
+                
+                todasLasImagenes.forEach((img, index) => {
+                    img.onload = function() {
+                        console.log(`✅ Imagen ${index + 1} cargada:`, img.src);
+                    };
+                    img.onerror = function() {
+                        console.log(`❌ Error cargando imagen ${index + 1}:`, img.src);
+                        img.style.display = 'none';
+                        
+                        // Mostrar mensaje de error si todas las imágenes fallan
+                        const imageContainer = img.closest('.property-images');
+                        if (imageContainer) {
+                            const errorMsg = document.createElement('div');
+                            errorMsg.innerHTML = '<div style="text-align: center; padding: 1rem; color: #d35400; background: #fff3cd; border-radius: 5px; margin-top: 0.5rem;">⚠️ No se pudieron cargar las imágenes. Verifica la conexión o contacta al asesor.</div>';
+                            imageContainer.appendChild(errorMsg);
+                        }
+                    };
+                });
+            }, 100);
+        }
+                
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         function cumpleAmbientes(ambientesProp) {
             console.log(`🛏️ Comparando ambientes: Propiedad ${ambientesProp} vs Usuario "${datosUsuario.ambientes}"`);
             
+            // Limpiar el texto por si hay duplicados
+            const ambientesUsuario = datosUsuario.ambientes.replace(/\s+ambientes\s+ambientes/, ' ambientes').trim();
+            
             // Si usuario seleccionó "No aplica", coincide con propiedades que tienen 0 ambientes
-            if (datosUsuario.ambientes === 'No aplica') {
+            if (ambientesUsuario === 'No aplica') {
                 const resultado = ambientesProp === 0;
                 console.log(`🔍 "No aplica" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó "Más de 4 ambientes"
-            else if (datosUsuario.ambientes === 'Más de 4 ambientes') {
+            else if (ambientesUsuario === 'Más de 4 ambientes') {
                 const resultado = ambientesProp >= 4;
                 console.log(`🔍 "Más de 4 ambientes" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó "Monoambiente"
-            else if (datosUsuario.ambientes === 'Monoambiente') {
+            else if (ambientesUsuario === 'Monoambiente') {
                 const resultado = ambientesProp === 1;
                 console.log(`🔍 "Monoambiente" vs propiedad ${ambientesProp}: ${resultado ? '✅ Coincide' : '❌ No coincide'}`);
                 return resultado;
             }
             // Si usuario seleccionó un número específico de ambientes (ej: "2 ambientes")
-            else if (datosUsuario.ambientes.includes('ambientes')) {
-                const match = datosUsuario.ambientes.match(/(\d+)\s*ambientes/);
+            else if (ambientesUsuario.includes('ambientes')) {
+                const match = ambientesUsuario.match(/(\d+)\s*ambientes/);
                 if (match) {
                     const ambientesRequeridos = parseInt(match[1]);
                     const resultado = ambientesProp === ambientesRequeridos;
@@ -1262,7 +1196,7 @@
         }
 
         function cumpleRangoPrecio(prop) {
-            console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs rango "${obtenerTextoPrecio()}"`);
+            console.log(`💰 Comparando: ${prop.precio} ${prop.moneda_precio} vs "${obtenerTextoPrecio()}"`);
             
             // Si la propiedad no tiene precio, solo coincide con "Consultar precio"
             if (!prop.precio || prop.precio === 0) {
@@ -1322,8 +1256,7 @@
         function procesarInteresDetectado(mensaje) {
             switch (mensaje) {
                 case '1':
-                    // Usamos la función original, pero que tiene la verificación dentro.
-                    mostrarPropiedadesDestacadas(); 
+                    mostrarDetallesCompletos();
                     break;
                 case '2':
                     agendarVisita();
@@ -1461,6 +1394,11 @@
         }
 
         // Función para verificar imágenes - Agregar al final
+        // ... (todo el código anterior permanece igual) ...
+
+        // Función para verificar imágenes - Agregar al final
+        // ... (tu código existente) ...
+
         function verificarTodasLasImagenes() {
             console.log('🔍 Verificando todas las imágenes en la página...');
             const todasLasImagenes = document.querySelectorAll('.property-image');
@@ -1474,6 +1412,67 @@
                     complete: img.complete
                 });
             });
+        } 
+
+        // Ejecutar después de mostrar propiedades
+        function mostrarPropiedadesDestacadasConVerificacion() {
+            propiedadesFiltradas = filtrarPropiedadesConPrecision();
+            datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
+            
+            console.log('🔍 Propiedades filtradas:', propiedadesFiltradas);
+            console.log('📊 Criterios de búsqueda:', datosUsuario);
+            
+            if (propiedadesFiltradas.length === 0) {
+                agregarMensajeBot('🔍 No encontré propiedades exactas con tus criterios. Un asesor te contactará para ayudarte.');
+                estado = 'contacto';
+                solicitarContacto();
+                return;
+            }
+            
+            const mensajeInteres = `
+                <div class="interest-detected">
+                    <h3>🎉 ¡Encontramos opciones para vos!</h3>
+                    <p>Tenemos <strong>${propiedadesFiltradas.length} propiedades</strong> que coinciden exactamente con tu búsqueda.</p>
+                </div>
+            `;
+            
+            agregarMensajeBot(mensajeInteres);
+            
+            let propiedadesHTML = `<div class="properties-grid">`;
+            
+            propiedadesFiltradas.forEach((prop, index) => {
+                propiedadesHTML += crearTarjetaPropiedadDetallada(prop, index + 1);
+            });
+            
+            propiedadesHTML += `</div>`;
+            
+            agregarMensajeBot(propiedadesHTML);
+            
+            // Verificar imágenes después de mostrarlas
+            setTimeout(() => {
+                verificarTodasLasImagenes();
+            }, 2000);
+            
+            const opciones = `
+                <div class="menu-item">
+                    <span class="menu-number">1</span>Ver más detalles de las propiedades
+                </div>
+                <div class="menu-item">
+                    <span class="menu-number">2</span>Agendar visita
+                </div>
+                <div class="menu-item">
+                    <span class="menu-number">3</span>Hablar con asesor
+                </div>
+                <div class="menu-item">
+                    <span class="menu-number">4</span>Volver al inicio
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `<strong>¿Qué querés hacer?</strong><br>
+                <em>Escribí el número de tu opción</em>`,
+                opciones
+            );
         } 
 
         // Función auxiliar para manejo de imágenes global
@@ -1531,11 +1530,11 @@
             console.log('🔄 Cache de imágenes limpiado');
         } 
         // Exportar funciones globales si es necesario
-        window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadas; // Usamos la función principal
+        window.mostrarPropiedadesDestacadasConVerificacion = mostrarPropiedadesDestacadasConVerificacion;
         window.verificarTodasLasImagenes = verificarTodasLasImagenes;
         window.limpiarCacheImagenes = limpiarCacheImagenes;
 
     </script>
 
 </body>
-</html>
+</html

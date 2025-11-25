@@ -999,68 +999,143 @@
         function crearTarjetaPropiedadDetallada(prop, numero) {
             console.log(`🖼️ Cargando propiedad ${prop.id_temporal} con ${prop.fotos ? prop.fotos.length : 0} fotos:`, prop.fotos);
             
-            // ... (todo el código anterior igual hasta el return) ...
+            // Generar características
+            const caracteristicas = [];
             
-            return;
-        
+            // Características principales
+            if (prop.cochera && (prop.cochera === 'Si' || prop.cochera === 'Sí' || prop.cochera === 'si' || prop.cochera === 'sí')) {
+                caracteristicas.push({text: 'Cochera', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Cochera', type: 'no'});
+            }
+            
+            if (prop.pileta && (prop.pileta === 'Si' || prop.pileta === 'Sí' || prop.pileta === 'si' || prop.pileta === 'sí')) {
+                caracteristicas.push({text: 'Pileta', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Pileta', type: 'no'});
+            }
+            
+            if (prop.balcon && (prop.balcon === 'Si' || prop.balcon === 'Sí' || prop.balcon === 'si' || prop.balcon === 'sí' || prop.balcon === 'x')) {
+                caracteristicas.push({text: 'Balcón', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Balcón', type: 'no'});
+            }
+            
+            if (prop.acepta_mascotas && (prop.acepta_mascotas === 'Si' || prop.acepta_mascotas === 'Sí' || prop.acepta_mascotas === 'si' || prop.acepta_mascotas === 'sí')) {
+                caracteristicas.push({text: 'Mascotas', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Mascotas', type: 'no'});
+            }
+            
+            if (prop.aire_acondicionado && (prop.aire_acondicionado === 'Si' || prop.aire_acondicionado === 'Sí' || prop.aire_acondicionado === 'si' || prop.aire_acondicionado === 'sí')) {
+                caracteristicas.push({text: 'Aire A/C', type: 'yes'});
+            } else {
+                caracteristicas.push({text: 'Aire A/C', type: 'no'});
+            }
+            
+            // Generar HTML de características
+            const featuresHTML = `
+                <div class="property-features">
+                    ${caracteristicas.map(feat => 
+                        `<span class="feature-badge feature-badge-${feat.type}">${feat.text}: ${feat.type === 'yes' ? '✅' : '❌'}</span>`
+                    ).join('')}
+                </div>`;
+            
+            // Generar HTML de imágenes
+            let imagenesHTML = '';
+            if (prop.fotos && prop.fotos.length > 0) {
+                console.log(`📸 Generando ${prop.fotos.length} imágenes para ${prop.id_temporal}`);
+                imagenesHTML = prop.fotos.map((foto, index) => {
+                    const rutaImagen = foto.startsWith('http') ? foto : 
+                                    foto.startsWith('/') ? foto.substring(1) : 
+                                    foto;
+                    
+                    return `<img src="${rutaImagen}" 
+                                alt="Imagen ${index + 1} de ${prop.titulo}" 
+                                class="property-image" 
+                                loading="lazy"
+                                onerror="console.error('❌ Error cargando imagen:', this.src); this.style.display='none'">`;
+                }).join('');
+                
+                console.log(`✅ HTML de imágenes generado para ${prop.id_temporal}`);
+            } else {
+                imagenesHTML = '<div style="text-align: center; padding: 1rem; color: #666; background: #f8f9fa; border-radius: 5px;">📷 No hay fotos disponibles para esta propiedad</div>';
+                console.log(`❌ No hay fotos para ${prop.id_temporal}`);
+            }
+            
+            // Información adicional específica - DEFINIR ANTES DEL RETURN
+            const infoAdicional = [
+                prop.direccion ? `📍 <strong>Dirección:</strong> ${prop.direccion}` : '',
+                prop.orientacion ? `🧭 <strong>Orientación:</strong> ${prop.orientacion}` : '',
+                prop.expensas ? `💰 <strong>Expensas:</strong> $${prop.expensas.toLocaleString()} ${prop.moneda_expensas}` : '',
+                prop.amenities && prop.amenities !== 'No' ? `🏊 <strong>Amenities:</strong> ${prop.amenities}` : ''
+            ].filter(info => info !== '').join('<br>');
+            
+            // AHORA EL RETURN CON TODAS LAS VARIABLES DEFINIDAS
+            return `
+                <div class="property-highlight">
+                    <div class="property-header">
+                        <h3>${numero}. ${prop.titulo}</h3>
+                        <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)} • ID: ${prop.id_temporal}</span>
+                    </div>
+                    <div class="property-content">
+                        <div class="property-price">
+                            ${formatearPrecio(prop)}
+                        </div>
+                        
+                        <div class="property-details">
+                            <div class="detail-item">🏠 ${prop.tipo.charAt(0).toUpperCase() + prop.tipo.slice(1)}</div>
+                            <div class="detail-item">📍 ${prop.barrio}</div>
+                            <div class="detail-item">🛏️ ${prop.ambientes} amb.</div>
+                            <div class="detail-item">📏 ${prop.metros_cuadrados}m²</div>
+                            <div class="detail-item">🏢 ${prop.antiguedad || 'N/A'} años</div>
+                            <div class="detail-item">⭐ ${prop.estado || 'N/A'}</div>
+                        </div>
+                        
+                        ${prop.descripcion ? `
+                            <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--whatsapp-green);">
+                                <strong>📝 Descripción:</strong><br>
+                                ${prop.descripcion}
+                            </div>
+                        ` : ''}
+                        
+                        ${infoAdicional ? `
+                            <div style="margin: 1rem 0; font-size: 0.9rem; padding: 0.8rem; background: #f0f8ff; border-radius: 5px;">
+                                ${infoAdicional}
+                            </div>
+                        ` : ''}
+                        
+                        ${featuresHTML}
+                        
+                        <div style="margin: 1rem 0;">
+                            <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
+                            <div class="property-images" id="images-${prop.id_temporal}">
+                                ${imagenesHTML}
+                            </div>
+                            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
+                                ${prop.fotos && prop.fotos.length > 0 ? 
+                                    `Haz clic en las imágenes para ampliar` : 
+                                    `Contacta al asesor para ver las fotos disponibles`
+                                }
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666; padding: 0.8rem; background: #f8f9fa; border-radius: 5px;">
+                            <strong>ID:</strong> ${prop.id_temporal} | 
+                            <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
+                            <strong>Fotos cargadas:</strong> ${prop.fotos ? prop.fotos.length : 0}
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-        
-        
-        <div class="property-highlight">
-            <div class="property-header">
-                <h3>${numero}. ${prop.titulo}</h3>
-                <span class="property-badge">${prop.operacion.charAt(0).toUpperCase() + prop.operacion.slice(1)} • ID: ${prop.id_temporal}</span>
-            </div>
-            <div class="property-content">
-                <div class="property-price">
-                    ${formatearPrecio(prop)}
-                </div>
-                
-                <div class="property-details">
-                    <div class="detail-item">🏠 ${prop.tipo.charAt(0).toUpperCase() + prop.tipo.slice(1)}</div>
-                    <div class="detail-item">📍 ${prop.barrio}</div>
-                    <div class="detail-item">🛏️ ${prop.ambientes} amb.</div>
-                    <div class="detail-item">📏 ${prop.metros_cuadrados}m²</div>
-                    <div class="detail-item">🏢 ${prop.antiguedad || 'N/A'} años</div>
-                    <div class="detail-item">⭐ ${prop.estado || 'N/A'}</div>
-                </div>
-                
-                ${prop.descripcion ? `
-                    <div style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--whatsapp-green);">
-                        <strong>📝 Descripción:</strong><br>
-                        ${prop.descripcion}
-                    </div>
-                ` : ''}
-                
-                ${infoAdicional ? `
-                    <div style="margin: 1rem 0; font-size: 0.9rem; padding: 0.8rem; background: #f0f8ff; border-radius: 5px;">
-                        ${infoAdicional}
-                    </div>
-                ` : ''}
-                
-                ${featuresHTML}
-                
-                <div style="margin: 1rem 0;">
-                    <strong>📸 Galería de Imágenes (${prop.fotos ? prop.fotos.length : 0}):</strong>
-                    <div class="property-images" id="images-${prop.id_temporal}">
-                        ${imagenesHTML}
-                    </div>
-                    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.8rem; color: #666;">
-                        ${prop.fotos && prop.fotos.length > 0 ? 
-                            `Haz clic en las imágenes para ampliar` : 
-                            `Contacta al asesor para ver las fotos disponibles`
-                        }
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: #666; padding: 0.8rem; background: #f8f9fa; border-radius: 5px;">
-                    <strong>ID:</strong> ${prop.id_temporal} | 
-                    <strong>Actualizado:</strong> ${new Date(prop.fecha_procesamiento).toLocaleDateString('es-AR')} |
-                    <strong>Fotos cargadas:</strong> ${prop.fotos ? prop.fotos.length : 0}
-                </div>
-            </div>
-        </div>
-   
+
+        // Y también necesitas esta función para formatear precios
+        function formatearPrecio(prop) {
+            if (!prop.precio || prop.precio === 0) return "Consultar precio";
+            const moneda = prop.moneda_precio === 'USD' ? 'U$D' : '$';
+            return `${moneda} ${prop.precio.toLocaleString()}`;
+        }
 
         function filtrarPropiedadesConPrecision() {
             console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);

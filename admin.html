@@ -1,198 +1,413 @@
-<script>
-    // --- CONFIGURACIÓN ---
-    // IMPORTANTE: Esta clave debe ser LA MISMA que pusiste en config.js
-    const adminSecretKey = "artarona";
-    // -------------------
-
-    let leads = [];
-    const API_URL = '/api/admin';
-
-    document.addEventListener('DOMContentLoaded', function() {
-        cargarLeads();
-    });
-
-    async function cargarLeads() {
-        try {
-            const response = await fetch(`${API_URL}/leads`, {
-                headers: { 'x-admin-secret': adminSecretKey }
-            });
-
-            if (response.status === 401 || response.status === 403) {
-                alert('Acceso denegado. La clave secreta es incorrecta.');
-                throw new Error('Clave secreta incorrecta');
-            }
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dante Propiedades - Panel de Administración</title>
+    <style>
+        :root {
+            --whatsapp-green: #25D366;
+            --whatsapp-dark: #075E54;
+            --admin-bg: #f5f5f5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--admin-bg);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .admin-header {
+            background: var(--whatsapp-dark);
+            color: white;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .back-link {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--whatsapp-dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .actions-container {
+            padding: 0 1.5rem 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: var(--whatsapp-green);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .leads-container {
+            padding: 0 1.5rem 2rem;
+        }
+        
+        .leads-table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+        }
+        
+        .leads-table th,
+        .leads-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .leads-table th {
+            background: var(--whatsapp-dark);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .leads-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .badge-venta {
+            background: #e8f5e8;
+            color: #27ae60;
+        }
+        
+        .badge-alquiler {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .empty-state div {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: 1fr 1fr;
             }
             
-            leads = await response.json();
-            mostrarLeads();
-            actualizarEstadisticas();
-        } catch (error) {
-            console.error("Error al cargar leads:", error);
-            if (error.message !== 'Clave secreta incorrecta') {
-                alert("No se pudieron cargar los leads. Revisa la consola para más detalles.");
+            .actions-container {
+                flex-direction: column;
             }
-            mostrarLeadsVacios();
+            
+            .leads-table {
+                font-size: 0.8rem;
+            }
+            
+            .leads-table th,
+            .leads-table td {
+                padding: 0.5rem;
+            }
         }
-    }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <a href="index.html" class="back-link">← Volver al Chatbot</a>
+        <h1>🔧 Panel de Administración</h1>
+        <p>Gestión de Leads - Dante Propiedades</p>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-number" id="totalLeads">0</div>
+            <div class="stat-label">Total Leads</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="leadsHoy">0</div>
+            <div class="stat-label">Leads Hoy</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="leadsVenta">0</div>
+            <div class="stat-label">Venta</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="leadsAlquiler">0</div>
+            <div class="stat-label">Alquiler</div>
+        </div>
+    </div>
+    
+    <div class="actions-container">
+        <button class="btn btn-primary" onclick="descargarExcel()">
+            📊 Descargar Excel
+        </button>
+        <button class="btn btn-danger" onclick="limpiarLeads()">
+            🗑️ Limpiar Leads
+        </button>
+    </div>
+    
+    <div class="leads-container">
+        <div id="leadsTableContainer">
+            <div class="empty-state">
+                <div>📭</div>
+                <h3>No hay leads registrados</h3>
+                <p>Los leads del bot de WhatsApp aparecerán aquí.</p>
+            </div>
+        </div>
+    </div>
 
-    async function limpiarLeads() {
-        if (confirm('¿Estás seguro de que querés eliminar todos los leads?')) {
+    <script>
+        // --- CONFIGURACIÓN ---
+        // IMPORTANTE: Esta clave debe ser LA MISMA que pusiste en config.js
+        const ADMIN_SECRET_KEY = "artarona";
+        // -------------------
+
+        let leads = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarLeads();
+        });
+
+        function cargarLeads() {
             try {
-                const response = await fetch(`${API_URL}/leads`, {
-                    method: 'DELETE',
-                    headers: { 'x-admin-secret': adminSecretKey }
-                });
-
-                if (response.status === 401 || response.status === 403) {
-                     alert('Acceso denegado. La clave secreta es incorrecta.');
-                    throw new Error('Clave secreta incorrecta');
-                }
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-
-                alert('Leads eliminados correctamente');
-                cargarLeads();
+                // Cargar leads desde localStorage
+                const leadsGuardados = localStorage.getItem('dante_leads');
+                leads = leadsGuardados ? JSON.parse(leadsGuardados) : [];
+                
+                mostrarLeads();
+                actualizarEstadisticas();
             } catch (error) {
-                console.error("Error al limpiar los leads:", error);
-                alert("No se pudieron eliminar los leads.");
+                console.error("Error al cargar leads:", error);
+                mostrarLeadsVacios();
             }
         }
-    }
 
-    // El resto de tus funciones (mostrarLeads, descargarExcel, etc.) no necesitan cambios.
-    // Pega aquí el resto de las funciones que ya tenías en tu script original.
-    function mostrarLeads() {
-        const container = document.getElementById('leadsTableContainer');
-        
-        if (leads.length === 0) {
-            mostrarLeadsVacios();
-            return;
-        }
-
-        leads.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-        let html = `
-            <table class="leads-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Contacto</th>
-                        <th>Operación</th>
-                        <th>Tipo</th>
-                        <th>Zona</th>
-                        <th>Ambientes</th>
-                        <th>Propiedades</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        leads.forEach(lead => {
-            const fecha = new Date(lead.timestamp).toLocaleDateString('es-AR');
-            const hora = new Date(lead.timestamp).toLocaleTimeString('es-AR');
-            
-            const contactoParts = lead.contacto.split('-').map(part => part.trim());
-            const nombre = contactoParts[0] || 'N/A';
-            const telefono = contactoParts[1] || 'N/A';
-            const email = contactoParts[2] || 'N/A';
-            
-            const badgeClass = `badge badge-${(lead.operacion || '').toLowerCase()}`;
-            
-            html += `
-                <tr>
-                    <td><strong>${fecha}</strong><br><small>${hora}</small></td>
-                    <td><strong>${nombre}</strong><br><small>📞 ${telefono}</small><br><small>📧 ${email}</small></td>
-                    <td><span class="${badgeClass}">${lead.operacion}</span></td>
-                    <td>${lead.tipo || 'N/A'}</td>
-                    <td>${lead.barrio || 'N/A'}</td>
-                    <td>${lead.ambientes || 'N/A'}</td>
-                    <td>${lead.propiedadesCoincidentes || 0}</td>
-                    <td><button class="btn btn-primary" onclick="contactarLead('${telefono}', '${nombre}')" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">📞 Contactar</button></td>
-                </tr>
-            `;
-        });
-
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    function mostrarLeadsVacios() {
-        const container = document.getElementById('leadsTableContainer');
-        container.innerHTML = `<div class="empty-state"><div>📭</div><h3>No hay leads registrados</h3><p>Los leads del bot de WhatsApp aparecerán aquí.</p></div>`;
-    }
-
-    function actualizarEstadisticas() {
-        const hoy = new Date().toDateString();
-        const leadsHoy = leads.filter(lead => new Date(lead.timestamp).toDateString() === hoy);
-        const leadsVenta = leads.filter(lead => lead.operacion === 'Venta');
-        const leadsAlquiler = leads.filter(lead => lead.operacion === 'Alquiler');
-        
-        document.getElementById('totalLeads').textContent = leads.length;
-        document.getElementById('leadsHoy').textContent = leadsHoy.length;
-        document.getElementById('leadsVenta').textContent = leadsVenta.length;
-        document.getElementById('leadsAlquiler').textContent = leadsAlquiler.length;
-    }
-
-    function descargarExcel() {
-        if (leads.length === 0) {
-            alert('No hay leads para descargar');
-            return;
-        }
-        const datos = leads.map(lead => {
-            const contactoParts = lead.contacto.split('-').map(part => part.trim());
-            return {
-                'Fecha': new Date(lead.timestamp).toLocaleDateString('es-AR'),
-                'Hora': new Date(lead.timestamp).toLocaleTimeString('es-AR'),
-                'Nombre': contactoParts[0] || '',
-                'Teléfono': contactoParts[1] || '',
-                'Email': contactoParts[2] || '',
-                'Operación': lead.operacion,
-                'Tipo Propiedad': lead.tipo || '',
-                'Zona': lead.barrio || '',
-                'Ambientes': lead.ambientes || '',
-                'Rango Precio': lead.precio || '',
-                'Propiedades Coincidentes': lead.propiedadesCoincidentes || 0
-            };
-        });
-        const csv = convertirAExcel(datos);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `leads_dante_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function convertirAExcel(datos) {
-        if (datos.length === 0) return '';
-        const cabeceras = Object.keys(datos[0]);
-        let csv = cabeceras.join(';') + '\n';
-        datos.forEach(fila => {
-            const valores = cabeceras.map(header => {
-                let valor = fila[header] || '';
-                if (typeof valor === 'string' && (valor.includes(';') || valor.includes('"'))) {
-                    valor = `"${valor.replace(/"/g, '""')}"`;
+        function limpiarLeads() {
+            if (confirm('¿Estás seguro de que querés eliminar todos los leads?')) {
+                try {
+                    localStorage.removeItem('dante_leads');
+                    alert('Leads eliminados correctamente');
+                    cargarLeads();
+                } catch (error) {
+                    console.error("Error al limpiar los leads:", error);
+                    alert("No se pudieron eliminar los leads.");
                 }
-                return valor;
+            }
+        }
+
+        function mostrarLeads() {
+            const container = document.getElementById('leadsTableContainer');
+            
+            if (leads.length === 0) {
+                mostrarLeadsVacios();
+                return;
+            }
+
+            leads.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let html = `
+                <table class="leads-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Contacto</th>
+                            <th>Operación</th>
+                            <th>Tipo</th>
+                            <th>Zona</th>
+                            <th>Ambientes</th>
+                            <th>Propiedades</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            leads.forEach(lead => {
+                const fecha = new Date(lead.timestamp).toLocaleDateString('es-AR');
+                const hora = new Date(lead.timestamp).toLocaleTimeString('es-AR');
+                
+                const contactoParts = lead.contacto ? lead.contacto.split('-').map(part => part.trim()) : ['N/A', 'N/A', 'N/A'];
+                const nombre = contactoParts[0] || 'N/A';
+                const telefono = contactoParts[1] || 'N/A';
+                const email = contactoParts[2] || 'N/A';
+                
+                const badgeClass = `badge badge-${(lead.operacion || '').toLowerCase()}`;
+                
+                html += `
+                    <tr>
+                        <td><strong>${fecha}</strong><br><small>${hora}</small></td>
+                        <td><strong>${nombre}</strong><br><small>📞 ${telefono}</small><br><small>📧 ${email}</small></td>
+                        <td><span class="${badgeClass}">${lead.operacion || 'N/A'}</span></td>
+                        <td>${lead.tipo || 'N/A'}</td>
+                        <td>${lead.barrio || 'N/A'}</td>
+                        <td>${lead.ambientes || 'N/A'}</td>
+                        <td>${lead.propiedadesCoincidentes || 0}</td>
+                        <td><button class="btn btn-primary" onclick="contactarLead('${telefono}', '${nombre}')" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">📞 Contactar</button></td>
+                    </tr>
+                `;
             });
-            csv += valores.join(';') + '\n';
-        });
-        return csv;
-    }
 
-    function contactarLead(telefono, nombre) {
-        const telefonoLimpio = telefono.replace(/[^\d+]/g, '');
-        const mensaje = `Hola ${nombre}, soy de Dante Propiedades. Te contacto por tu interés en nuestras propiedades.`;
-        const urlWhatsapp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
-        window.open(urlWhatsapp, '_blank');
-    }
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
 
-    setInterval(cargarLeads, 30000);
-</script>
+        function mostrarLeadsVacios() {
+            const container = document.getElementById('leadsTableContainer');
+            container.innerHTML = `<div class="empty-state"><div>📭</div><h3>No hay leads registrados</h3><p>Los leads del bot de WhatsApp aparecerán aquí.</p></div>`;
+        }
+
+        function actualizarEstadisticas() {
+            const hoy = new Date().toDateString();
+            const leadsHoy = leads.filter(lead => new Date(lead.timestamp).toDateString() === hoy);
+            const leadsVenta = leads.filter(lead => lead.operacion === 'venta');
+            const leadsAlquiler = leads.filter(lead => lead.operacion === 'alquiler');
+            
+            document.getElementById('totalLeads').textContent = leads.length;
+            document.getElementById('leadsHoy').textContent = leadsHoy.length;
+            document.getElementById('leadsVenta').textContent = leadsVenta.length;
+            document.getElementById('leadsAlquiler').textContent = leadsAlquiler.length;
+        }
+
+        function descargarExcel() {
+            if (leads.length === 0) {
+                alert('No hay leads para descargar');
+                return;
+            }
+            const datos = leads.map(lead => {
+                const contactoParts = lead.contacto ? lead.contacto.split('-').map(part => part.trim()) : ['', '', ''];
+                return {
+                    'Fecha': new Date(lead.timestamp).toLocaleDateString('es-AR'),
+                    'Hora': new Date(lead.timestamp).toLocaleTimeString('es-AR'),
+                    'Nombre': contactoParts[0] || '',
+                    'Teléfono': contactoParts[1] || '',
+                    'Email': contactoParts[2] || '',
+                    'Operación': lead.operacion || '',
+                    'Tipo Propiedad': lead.tipo || '',
+                    'Zona': lead.barrio || '',
+                    'Ambientes': lead.ambientes || '',
+                    'Rango Precio': lead.precio || '',
+                    'Propiedades Coincidentes': lead.propiedadesCoincidentes || 0,
+                    'Perfil': lead.perfil || 'CONSULTA_GENERAL'
+                };
+            });
+            const csv = convertirAExcel(datos);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `leads_dante_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function convertirAExcel(datos) {
+            if (datos.length === 0) return '';
+            const cabeceras = Object.keys(datos[0]);
+            let csv = cabeceras.join(';') + '\n';
+            datos.forEach(fila => {
+                const valores = cabeceras.map(header => {
+                    let valor = fila[header] || '';
+                    if (typeof valor === 'string' && (valor.includes(';') || valor.includes('"'))) {
+                        valor = `"${valor.replace(/"/g, '""')}"`;
+                    }
+                    return valor;
+                });
+                csv += valores.join(';') + '\n';
+            });
+            return csv;
+        }
+
+        function contactarLead(telefono, nombre) {
+            if (telefono === 'N/A') {
+                alert('No hay número de teléfono disponible para este lead');
+                return;
+            }
+            
+            const telefonoLimpio = telefono.replace(/[^\d+]/g, '');
+            const mensaje = `Hola ${nombre}, soy de Dante Propiedades. Te contacto por tu interés en nuestras propiedades.`;
+            const urlWhatsapp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+            window.open(urlWhatsapp, '_blank');
+        }
+
+        // Actualizar cada 30 segundos
+        setInterval(cargarLeads, 30000);
+    </script>
+</body>
+</html>

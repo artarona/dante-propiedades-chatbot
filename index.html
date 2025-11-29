@@ -238,7 +238,206 @@
             display: none;
         }
 
-        /* ... (resto de estilos sin cambios) ... */
+        /* Estilos para propiedades destacadas */
+        .properties-grid {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .property-highlight {
+            border: 2px solid var(--whatsapp-green);
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .property-header {
+            background: linear-gradient(135deg, var(--whatsapp-green), var(--whatsapp-dark));
+            color: white;
+            padding: 1rem;
+        }
+        
+        .property-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .property-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+        
+        .property-content {
+            padding: 1rem;
+        }
+        
+        .property-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .property-price {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--whatsapp-dark);
+            text-align: center;
+            margin: 1rem 0;
+            padding: 0.8rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .property-images {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            margin: 1rem 0;
+        }
+        
+        .property-image {
+            width: 150px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .property-image:hover {
+            transform: scale(1.05);
+        }
+        
+        .property-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .feature-badge {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            border: 1px solid #27ae60;
+        }
+        
+        .feature-badge-yes {
+            background: #e8f5e8;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+        
+        .feature-badge-no {
+            background: #ffebee;
+            color: #e53935;
+            border: 1px solid #e53935;
+        }
+        
+        .property-link {
+            display: block;
+            text-align: center;
+            background: var(--whatsapp-green);
+            color: white;
+            padding: 0.8rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+        
+        .property-link:hover {
+            background: var(--whatsapp-dark);
+        }
+        
+        .interest-detected {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #f39c12;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .interest-detected h3 {
+            color: #d35400;
+            margin-bottom: 0.5rem;
+        }
+
+        .resumen-seleccion {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 2px solid #1976d2;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+        
+        .resumen-seleccion h4 {
+            color: #1565c0;
+            margin-bottom: 0.8rem;
+            text-align: center;
+        }
+        
+        .resumen-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid #e3f2fd;
+        }
+        
+        .resumen-label {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .resumen-value {
+            color: #0d47a1;
+        }
+
+        .debug-info {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 0.8rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .message {
+                max-width: 95%;
+            }
+            
+            .property-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .property-image {
+                width: 120px;
+                height: 90px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -356,10 +555,8 @@
             const claveIngresada = document.getElementById('adminKeyInput').value;
             
             if (claveIngresada === ADMIN_SECRET_KEY) {
-                // Clave correcta, redirigir al panel de administración
                 window.location.href = 'admin.html';
             } else {
-                // Clave incorrecta, mostrar error
                 document.getElementById('adminKeyError').style.display = 'block';
                 document.getElementById('adminKeyInput').value = '';
                 document.getElementById('adminKeyInput').focus();
@@ -373,34 +570,27 @@
             datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
             datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
             
-            // Extraer ambientes únicos y ordenar correctamente
             const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb >= 0))].sort((a, b) => a - b);
             
-            // Crear array de ambientes en el orden correcto
             const opcionesAmbientes = [];
             
-            // Primero agregar Monoambiente si existe
             if (ambientesUnicos.includes(1)) {
                 opcionesAmbientes.push({valor: 1, texto: 'Monoambiente'});
             }
             
-            // Luego agregar 2 ambientes si existe
             if (ambientesUnicos.includes(2)) {
                 opcionesAmbientes.push({valor: 2, texto: '2 ambientes'});
             }
             
-            // Luego agregar 3 ambientes si existe
             if (ambientesUnicos.includes(3)) {
                 opcionesAmbientes.push({valor: 3, texto: '3 ambientes'});
             }
             
-            // Luego agregar "Más de 3 ambientes" para 4 o más
             const ambientesMasDe3 = ambientesUnicos.filter(amb => amb >= 4);
             if (ambientesMasDe3.length > 0) {
                 opcionesAmbientes.push({valor: 4, texto: 'Más de 3 ambientes'});
             }
             
-            // Finalmente "No aplica" si existe 0
             if (ambientesUnicos.includes(0)) {
                 opcionesAmbientes.push({valor: 0, texto: 'No aplica'});
             }
@@ -625,7 +815,7 @@
                     datosUsuario.operacion = 'otros';
                     estado = 'contacto';
                     agregarMensajeBot(`✅ Elegiste: <strong>Otros</strong>`);
-                    mostrarResumenSeleccion();
+                    solicitarContacto();
                 }
             } else {
                 agregarMensajeBot(`❌ Por favor, respondé con el número de tu opción (1-${opcionesValidas.length})`);
@@ -718,60 +908,100 @@
             
             if (precios.includes(mensaje)) {
                 datosUsuario.precio = mensaje;
-                
-                // MOSTRAR RESUMEN ANTES DE CONTINUAR
                 mostrarResumenSeleccion();
-                
             } else {
                 agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 5');
                 mostrarMenuPrecio();
             }
         }
 
-        // ==================== INICIALIZACIÓN ====================
+        // ==================== FUNCIONES DE RESULTADOS Y PROPIEDADES ====================
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar eventos
-            document.getElementById('userInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    enviarMensaje();
-                }
-            });
+        function mostrarResumenSeleccion() {
+            const resumenHTML = `
+                <div class="resumen-seleccion">
+                    <h4>📋 Resumen de tu selección</h4>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Operación:</span>
+                        <span class="resumen-value">${datosUsuario.operacion.charAt(0).toUpperCase() + datosUsuario.operacion.slice(1)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Tipo:</span>
+                        <span class="resumen-value">${datosUsuario.tipo.charAt(0).toUpperCase() + datosUsuario.tipo.slice(1)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Ambientes:</span>
+                        <span class="resumen-value">${datosUsuario.ambientes}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Zona:</span>
+                        <span class="resumen-value">${datosUsuario.barrio}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Precio:</span>
+                        <span class="resumen-value">${obtenerTextoPrecio()}</span>
+                    </div>
+                </div>
+            `;
             
-            document.getElementById('adminKeyInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    verificarClaveAdmin();
-                }
-            });
+            agregarMensajeBot(resumenHTML);
             
-            // Cerrar modal al hacer click fuera
-            window.addEventListener('click', function(event) {
-                const modal = document.getElementById('adminModal');
-                if (event.target === modal) {
-                    cerrarModal();
-                }
-            });
+            propiedadesFiltradas = filtrarPropiedadesConPrecision();
+            datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
             
-            // Cargar propiedades
-            fetch('propiedades.json')
-                .then(response => response.json())
-                .then(data => {
-                    propiedades = data;
-                    console.log('✅ Propiedades cargadas:', propiedades.length);
-                    extraerDatosDinamicos();
-                    mostrarMenuInicio();
-                })
-                .catch(error => {
-                    console.error('❌ Error cargando propiedades:', error);
-                    agregarMensajeBot('❌ Error cargando las propiedades. Por favor, recarga la página.');
-                });
+            console.log('🎯 RESULTADO FINAL FILTRADO:', propiedadesFiltradas);
             
-            document.getElementById('userInput').focus();
-        });
+            if (esInteresadoReal() && propiedadesFiltradas.length > 0) {
+                estado = 'interes_detectado';
+                datosUsuario.perfilCompleto = true;
+                setTimeout(() => mostrarPropiedadesDestacadas(), 1000);
+            } else {
+                estado = 'contacto';
+                setTimeout(() => solicitarContacto(), 1000);
+            }
+        }
 
-        // ... (aquí continúan el resto de las funciones que ya tenías en tu código original) ...
-        // Solo asegúrate de que todas las funciones estén definidas antes de ser usadas
+        function obtenerTextoPrecio() {
+            const esVenta = datosUsuario.operacion === 'venta';
+            const moneda = esVenta ? 'U$D' : '$';
+            const rangos = esVenta ? 
+                ['Hasta U$D 100.000', 'U$D 100.000 - 200.000', 'U$D 200.000 - 500.000', 'Más de U$D 500.000'] :
+                ['Hasta $ 100.000', '$ 100.000 - 200.000', '$ 200.000 - 500.000', 'Más de $ 500.000'];
+            
+            if (datosUsuario.precio === '5') return 'Consultar precio';
+            return rangos[parseInt(datosUsuario.precio) - 1];
+        }
 
-    </script>
-</body>
-</html>
+        function esInteresadoReal() {
+            const tieneOperacionEspecifica = datosUsuario.operacion && datosUsuario.operacion !== 'otros';
+            const tieneTipoEspecifico = datosUsuario.tipo && datosUsuario.tipo !== 'otros';
+            const tieneBarrioEspecifico = datosUsuario.barrio && datosDinamicos.barrios.includes(datosUsuario.barrio);
+            
+            return tieneOperacionEspecifica && tieneTipoEspecifico && tieneBarrioEspecifico;
+        }
+
+        function filtrarPropiedadesConPrecision() {
+            console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
+            
+            const propiedadesCoincidentes = propiedades.filter(prop => {
+                // 1. OPERACIÓN - Coincidencia exacta
+                if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
+                    return false;
+                }
+                
+                // 2. TIPO - Coincidencia exacta
+                if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
+                    return false;
+                }
+                
+                // 3. BARRIO - Coincidencia exacta
+                if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
+                    return false;
+                }
+                
+                // 4. AMBientes - Usar función corregida
+                if (datosUsuario.ambientes && !cumpleAmbientes(prop.ambientes)) {
+                    return false;
+                }
+                
+                // 5. PRECIO - Función más flexible

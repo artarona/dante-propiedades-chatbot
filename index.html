@@ -238,7 +238,7 @@
             display: none;
         }
 
-        /* Estilos para propiedades destacadas */
+        /* Nuevos estilos para propiedades destacadas */
         .properties-grid {
             display: grid;
             gap: 1rem;
@@ -473,7 +473,7 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN - Clave de administración
+        // CONFIGURACIÓN - Clave de administración (debe coincidir con config.js)
         const ADMIN_SECRET_KEY = "artarona";
 
         // Estado del chatbot
@@ -497,46 +497,6 @@
             operaciones: [],
             ambientes: []
         };
-
-        // ==================== FUNCIONES BÁSICAS DEL CHAT ====================
-
-        function agregarMensajeUsuario(texto) {
-            const chatMessages = document.getElementById('chatMessages');
-            const mensajeDiv = document.createElement('div');
-            mensajeDiv.className = 'message user-message';
-            mensajeDiv.innerHTML = `${texto}<div class="timestamp">${obtenerHoraActual()}</div>`;
-            chatMessages.appendChild(mensajeDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function agregarMensajeBot(texto, opciones = null) {
-            const chatMessages = document.getElementById('chatMessages');
-            const mensajeDiv = document.createElement('div');
-            mensajeDiv.className = 'message bot-message';
-            
-            let contenido = texto;
-            if (opciones) contenido += `<div class="menu-options">${opciones}</div>`;
-            contenido += `<div class="timestamp">${obtenerHoraActual()}</div>`;
-            
-            mensajeDiv.innerHTML = contenido;
-            chatMessages.appendChild(mensajeDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function obtenerHoraActual() {
-            return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        function enviarMensaje() {
-            const input = document.getElementById('userInput');
-            const mensaje = input.value.trim();
-            
-            if (!mensaje) return;
-
-            agregarMensajeUsuario(mensaje);
-            setTimeout(() => procesarRespuesta(mensaje), 500);
-            input.value = '';
-        }
 
         // ==================== FUNCIONES DE ADMINISTRACIÓN ====================
 
@@ -563,34 +523,80 @@
             }
         }
 
-        // ==================== FUNCIONES DE DATOS DINÁMICOS ====================
+        // Permitir Enter en el modal
+        document.getElementById('adminKeyInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verificarClaveAdmin();
+            }
+        });
+
+        // Cerrar modal al hacer click fuera
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('adminModal');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        });
+
+        // ==================== CÓDIGO ORIGINAL DEL CHATBOT ====================
+        // (Manteniendo toda la funcionalidad original)
+
+        // Cargar propiedades y extraer datos dinámicos
+        fetch('propiedades.json')
+            .then(response => response.json())
+            .then(data => {
+                propiedades = data;
+                console.log('✅ Propiedades cargadas:', propiedades.length);
+                console.log('📋 Propiedades disponibles:', propiedades.map(p => ({
+                    id: p.id_temporal,
+                    titulo: p.titulo,
+                    operacion: p.operacion,
+                    tipo: p.tipo,
+                    ambientes: p.ambientes,
+                    barrio: p.barrio,
+                    precio: p.precio
+                })));
+                extraerDatosDinamicos();
+                mostrarMenuInicio();
+            })
+            .catch(error => {
+                console.error('❌ Error cargando propiedades:', error);
+                agregarMensajeBot('❌ Error cargando las propiedades. Por favor, recarga la página.');
+            });
 
         function extraerDatosDinamicos() {
             datosDinamicos.barrios = [...new Set(propiedades.map(p => p.barrio).filter(Boolean))];
             datosDinamicos.tipos = [...new Set(propiedades.map(p => p.tipo).filter(Boolean))];
             datosDinamicos.operaciones = [...new Set(propiedades.map(p => p.operacion).filter(Boolean))];
             
+            // Extraer ambientes únicos y ordenar correctamente
             const ambientesUnicos = [...new Set(propiedades.map(p => p.ambientes).filter(amb => amb >= 0))].sort((a, b) => a - b);
             
+            // Crear array de ambientes en el orden correcto
             const opcionesAmbientes = [];
             
+            // Primero agregar Monoambiente si existe
             if (ambientesUnicos.includes(1)) {
                 opcionesAmbientes.push({valor: 1, texto: 'Monoambiente'});
             }
             
+            // Luego agregar 2 ambientes si existe
             if (ambientesUnicos.includes(2)) {
                 opcionesAmbientes.push({valor: 2, texto: '2 ambientes'});
             }
             
+            // Luego agregar 3 ambientes si existe
             if (ambientesUnicos.includes(3)) {
                 opcionesAmbientes.push({valor: 3, texto: '3 ambientes'});
             }
             
+            // Luego agregar "Más de 3 ambientes" para 4 o más
             const ambientesMasDe3 = ambientesUnicos.filter(amb => amb >= 4);
             if (ambientesMasDe3.length > 0) {
                 opcionesAmbientes.push({valor: 4, texto: 'Más de 3 ambientes'});
             }
             
+            // Finalmente "No aplica" si existe 0
             if (ambientesUnicos.includes(0)) {
                 opcionesAmbientes.push({valor: 0, texto: 'No aplica'});
             }
@@ -599,8 +605,6 @@
             
             console.log('📊 Datos extraídos:', datosDinamicos);
         }
-
-        // ==================== FUNCIONES DE MENÚ Y NAVEGACIÓN ====================
 
         function mostrarMenuInicio() {
             estado = 'inicio';
@@ -633,129 +637,52 @@
             );
         }
 
-        function mostrarMenuTipoPropiedad() {
-            estado = 'tipo_propiedad';
-            
-            let opcionesHTML = '';
-            datosDinamicos.tipos.forEach((tipo, index) => {
-                const numero = (index + 1).toString();
-                const tipoFormateado = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numero}</span>${tipoFormateado}
-                    </div>
-                `;
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('userInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    enviarMensaje();
+                }
             });
+            document.getElementById('userInput').focus();
+        });
+
+        function enviarMensaje() {
+            const input = document.getElementById('userInput');
+            const mensaje = input.value.trim();
             
-            if (datosDinamicos.tipos.length < 5) {
-                const numeroOtros = (datosDinamicos.tipos.length + 1).toString();
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numeroOtros}</span>Otros
-                    </div>
-                `;
-            }
-            
-            agregarMensajeBot(
-                `🏠 <strong>¿Qué tipo de propiedad te interesa?</strong><br>
-                <em>Escribí el número correspondiente</em>`,
-                opcionesHTML
-            );
+            if (!mensaje) return;
+
+            agregarMensajeUsuario(mensaje);
+            setTimeout(() => procesarRespuesta(mensaje), 500);
+            input.value = '';
         }
 
-        function mostrarMenuAmbientes() {
-            estado = 'ambientes';
-            
-            let opcionesHTML = '';
-            
-            datosDinamicos.ambientes.forEach((ambienteObj, index) => {
-                const numero = (index + 1).toString();
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numero}</span>${ambienteObj.texto}
-                    </div>
-                `;
-            });
-            
-            agregarMensajeBot(
-                `🛏️ <strong>¿Cuántos ambientes necesitás?</strong><br>
-                <em>Escribí el número correspondiente</em>`,
-                opcionesHTML
-            );
+        function agregarMensajeUsuario(texto) {
+            const chatMessages = document.getElementById('chatMessages');
+            const mensajeDiv = document.createElement('div');
+            mensajeDiv.className = 'message user-message';
+            mensajeDiv.innerHTML = `${texto}<div class="timestamp">${obtenerHoraActual()}</div>`;
+            chatMessages.appendChild(mensajeDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function mostrarMenuBarrio() {
-            estado = 'barrio';
+        function agregarMensajeBot(texto, opciones = null) {
+            const chatMessages = document.getElementById('chatMessages');
+            const mensajeDiv = document.createElement('div');
+            mensajeDiv.className = 'message bot-message';
             
-            let opcionesHTML = '';
+            let contenido = texto;
+            if (opciones) contenido += `<div class="menu-options">${opciones}</div>`;
+            contenido += `<div class="timestamp">${obtenerHoraActual()}</div>`;
             
-            datosDinamicos.barrios.forEach((barrio, index) => {
-                const numero = (index + 1).toString();
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numero}</span>${barrio}
-                    </div>
-                `;
-            });
-            
-            const numeroOtraZona = (datosDinamicos.barrios.length + 1).toString();
-            opcionesHTML += `
-                <div class="menu-item">
-                    <span class="menu-number">${numeroOtraZona}</span>Otra zona
-                </div>
-            `;
-            
-            agregarMensajeBot(
-                `📍 <strong>¿En qué zona buscás?</strong><br>
-                <em>Escribí el número correspondiente</em>`,
-                opcionesHTML
-            );
+            mensajeDiv.innerHTML = contenido;
+            chatMessages.appendChild(mensajeDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function mostrarMenuPrecio() {
-            estado = 'precio';
-            
-            const esVenta = datosUsuario.operacion === 'venta';
-            const moneda = esVenta ? 'U$D' : '$';
-            
-            const rangos = esVenta ? 
-                [
-                    'Hasta U$D 100.000',
-                    'U$D 100.000 - 200.000', 
-                    'U$D 200.000 - 500.000',
-                    'Más de U$D 500.000'
-                ] : [
-                    'Hasta $ 100.000',
-                    '$ 100.000 - 200.000',
-                    '$ 200.000 - 500.000', 
-                    'Más de $ 500.000'
-                ];
-            
-            let opcionesHTML = '';
-            rangos.forEach((rango, index) => {
-                const numero = (index + 1).toString();
-                opcionesHTML += `
-                    <div class="menu-item">
-                        <span class="menu-number">${numero}</span>${rango}
-                    </div>
-                `;
-            });
-            
-            const numeroConsultar = (rangos.length + 1).toString();
-            opcionesHTML += `
-                <div class="menu-item">
-                    <span class="menu-number">${numeroConsultar}</span>Consultar precio
-                </div>
-            `;
-            
-            agregarMensajeBot(
-                `💰 <strong>¿Qué rango de precio tenés en mente?</strong><br>
-                <em>Escribí el número correspondiente</em>`,
-                opcionesHTML
-            );
+        function obtenerHoraActual() {
+            return new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
         }
-
-        // ==================== FUNCIONES DE PROCESAMIENTO ====================
 
         function procesarRespuesta(mensaje) {
             console.log('Procesando mensaje:', mensaje, 'Estado actual:', estado);
@@ -815,12 +742,42 @@
                     datosUsuario.operacion = 'otros';
                     estado = 'contacto';
                     agregarMensajeBot(`✅ Elegiste: <strong>Otros</strong>`);
-                    solicitarContacto();
+                    mostrarResumenSeleccion();
                 }
             } else {
                 agregarMensajeBot(`❌ Por favor, respondé con el número de tu opción (1-${opcionesValidas.length})`);
                 mostrarMenuInicio();
             }
+        }
+
+        function mostrarMenuTipoPropiedad() {
+            estado = 'tipo_propiedad';
+            
+            let opcionesHTML = '';
+            datosDinamicos.tipos.forEach((tipo, index) => {
+                const numero = (index + 1).toString();
+                const tipoFormateado = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${tipoFormateado}
+                    </div>
+                `;
+            });
+            
+            if (datosDinamicos.tipos.length < 5) {
+                const numeroOtros = (datosDinamicos.tipos.length + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numeroOtros}</span>Otros
+                    </div>
+                `;
+            }
+            
+            agregarMensajeBot(
+                `🏠 <strong>¿Qué tipo de propiedad te interesa?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
         }
 
         function procesarTipoPropiedad(mensaje) {
@@ -851,6 +808,27 @@
             }
         }
 
+        function mostrarMenuAmbientes() {
+            estado = 'ambientes';
+            
+            let opcionesHTML = '';
+            
+            datosDinamicos.ambientes.forEach((ambienteObj, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${ambienteObj.texto}
+                    </div>
+                `;
+            });
+            
+            agregarMensajeBot(
+                `🛏️ <strong>¿Cuántos ambientes necesitás?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
+
         function procesarAmbientes(mensaje) {
             const maxOpciones = datosDinamicos.ambientes.length;
             const opcionesValidas = Array.from({length: maxOpciones}, (_, i) => (i + 1).toString());
@@ -868,6 +846,34 @@
                 agregarMensajeBot(`❌ Por favor, elegí una opción del 1 al ${maxOpciones}`);
                 mostrarMenuAmbientes();
             }
+        }
+
+        function mostrarMenuBarrio() {
+            estado = 'barrio';
+            
+            let opcionesHTML = '';
+            
+            datosDinamicos.barrios.forEach((barrio, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${barrio}
+                    </div>
+                `;
+            });
+            
+            const numeroOtraZona = (datosDinamicos.barrios.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item">
+                    <span class="menu-number">${numeroOtraZona}</span>Otra zona
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `📍 <strong>¿En qué zona buscás?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
         }
 
         function procesarBarrio(mensaje) {
@@ -903,19 +909,63 @@
             }
         }
 
+        function mostrarMenuPrecio() {
+            estado = 'precio';
+            
+            const esVenta = datosUsuario.operacion === 'venta';
+            const moneda = esVenta ? 'U$D' : '$';
+            
+            const rangos = esVenta ? 
+                [
+                    'Hasta U$D 100.000',
+                    'U$D 100.000 - 200.000', 
+                    'U$D 200.000 - 500.000',
+                    'Más de U$D 500.000'
+                ] : [
+                    'Hasta $ 100.000',
+                    '$ 100.000 - 200.000',
+                    '$ 200.000 - 500.000', 
+                    'Más de $ 500.000'
+                ];
+            
+            let opcionesHTML = '';
+            rangos.forEach((rango, index) => {
+                const numero = (index + 1).toString();
+                opcionesHTML += `
+                    <div class="menu-item">
+                        <span class="menu-number">${numero}</span>${rango}
+                    </div>
+                `;
+            });
+            
+            const numeroConsultar = (rangos.length + 1).toString();
+            opcionesHTML += `
+                <div class="menu-item">
+                    <span class="menu-number">${numeroConsultar}</span>Consultar precio
+                </div>
+            `;
+            
+            agregarMensajeBot(
+                `💰 <strong>¿Qué rango de precio tenés en mente?</strong><br>
+                <em>Escribí el número correspondiente</em>`,
+                opcionesHTML
+            );
+        }
+
         function procesarPrecio(mensaje) {
             const precios = ['1', '2', '3', '4', '5'];
             
             if (precios.includes(mensaje)) {
                 datosUsuario.precio = mensaje;
+                
+                // MOSTRAR RESUMEN ANTES DE CONTINUAR
                 mostrarResumenSeleccion();
+                
             } else {
                 agregarMensajeBot('❌ Por favor, elegí una opción del 1 al 5');
                 mostrarMenuPrecio();
             }
         }
-
-        // ==================== FUNCIONES DE RESULTADOS Y PROPIEDADES ====================
 
         function mostrarResumenSeleccion() {
             const resumenHTML = `
@@ -946,62 +996,22 @@
             
             agregarMensajeBot(resumenHTML);
             
+            // VERIFICAR PROPIEDADES QUE COINCIDEN
             propiedadesFiltradas = filtrarPropiedadesConPrecision();
             datosUsuario.propiedadesCoincidentes = propiedadesFiltradas.length;
             
             console.log('🎯 RESULTADO FINAL FILTRADO:', propiedadesFiltradas);
             
-            if (esInteresadoReal() && propiedadesFiltradas.length > 0) {
-                estado = 'interes_detectado';
-                datosUsuario.perfilCompleto = true;
-                setTimeout(() => mostrarPropiedadesDestacadas(), 1000);
-            } else {
-                estado = 'contacto';
-                setTimeout(() => solicitarContacto(), 1000);
-            }
-        }
-
-        function obtenerTextoPrecio() {
-            const esVenta = datosUsuario.operacion === 'venta';
-            const moneda = esVenta ? 'U$D' : '$';
-            const rangos = esVenta ? 
-                ['Hasta U$D 100.000', 'U$D 100.000 - 200.000', 'U$D 200.000 - 500.000', 'Más de U$D 500.000'] :
-                ['Hasta $ 100.000', '$ 100.000 - 200.000', '$ 200.000 - 500.000', 'Más de $ 500.000'];
+            // DEBUG Mejorado
+            const propiedadesCoincidentes = propiedadesFiltradas.map(p => 
+                `${p.id_temporal}: ${p.titulo} (${p.precio} ${p.moneda_precio})`
+            ).join('<br>');
             
-            if (datosUsuario.precio === '5') return 'Consultar precio';
-            return rangos[parseInt(datosUsuario.precio) - 1];
-        }
-
-        function esInteresadoReal() {
-            const tieneOperacionEspecifica = datosUsuario.operacion && datosUsuario.operacion !== 'otros';
-            const tieneTipoEspecifico = datosUsuario.tipo && datosUsuario.tipo !== 'otros';
-            const tieneBarrioEspecifico = datosUsuario.barrio && datosDinamicos.barrios.includes(datosUsuario.barrio);
-            
-            return tieneOperacionEspecifica && tieneTipoEspecifico && tieneBarrioEspecifico;
-        }
-
-        function filtrarPropiedadesConPrecision() {
-            console.log('🎯 INICIANDO FILTRADO CON CRITERIOS:', datosUsuario);
-            
-            const propiedadesCoincidentes = propiedades.filter(prop => {
-                // 1. OPERACIÓN - Coincidencia exacta
-                if (datosUsuario.operacion && prop.operacion !== datosUsuario.operacion) {
-                    return false;
-                }
-                
-                // 2. TIPO - Coincidencia exacta
-                if (datosUsuario.tipo && prop.tipo !== datosUsuario.tipo) {
-                    return false;
-                }
-                
-                // 3. BARRIO - Coincidencia exacta
-                if (datosUsuario.barrio && prop.barrio !== datosUsuario.barrio) {
-                    return false;
-                }
-                
-                // 4. AMBientes - Usar función corregida
-                if (datosUsuario.ambientes && !cumpleAmbientes(prop.ambientes)) {
-                    return false;
-                }
-                
-                // 5. PRECIO - Función más flexible
+            const debugInfo = `
+                <div class="debug-info">
+                    <strong>🔍 Análisis de Coincidencias:</strong><br>
+                    • Propiedades en base: ${propiedades.length}<br>
+                    • Coincidencias encontradas: ${propiedadesFiltradas.length}<br>
+                    • Propiedades que coinciden:<br>
+                    ${propiedadesCoincidentes || '&nbsp;&nbsp;→ Ninguna propiedad coincide'}<br>
+                    <em>Revisa la consola para detalles del filtrado</em

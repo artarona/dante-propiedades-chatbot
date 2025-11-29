@@ -1,6 +1,6 @@
 --prefer-binary
 Flask==2.3.3
 Flask-Cors==4.0.0
-pandas==2.0.3
 numpy==1.26.4
 gunicorn==23.0.0
+pandas>=2.1.0  # Versión más reciente con mejor soporte

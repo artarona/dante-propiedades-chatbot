@@ -610,6 +610,10 @@
         function mostrarMenuInicio() {
             estado = 'inicio';
             
+            
+            
+            // OPERACION  
+ 
             let opcionesHTML = '';
             datosDinamicos.operaciones.forEach((operacion, index) => {
                 const numero = (index + 1).toString();
@@ -632,7 +636,7 @@
             
             agregarMensajeBot(
                 `¡Hola! Soy el asistente inmobiliario de Dante Propiedades. 😊<br><br>
-                <strong>Decime qué necesitás:</strong><br>
+                <strong>Decime qué operación necesitás:</strong><br>
                 <em>Escribí el número de tu opción</em>`,
                 opcionesHTML
             );

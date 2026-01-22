@@ -1,14 +1,18 @@
+require('dotenv').config();
 const express = require('express');
 const propertyService = require('./services/propertyService');
 const whatsappRoutes = require('./routes/whatsapp');
+const adminRoutes = require('./routes/admin');
+const { authenticateAdmin } = require('./middleware/auth'); // Importar middleware
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Mount the WhatsApp routes
+// Mount the routes
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/admin', authenticateAdmin, adminRoutes); // Proteger rutas de admin
 
 // A simple test route
 app.get('/api/properties', (req, res) => {

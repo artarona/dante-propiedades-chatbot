@@ -10,3 +10,5 @@ venv/
 .DS_Store
 *.sqlite3
 *.db
+node_modules/
+backend/node_modules/
